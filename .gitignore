@@ -1,0 +1,31 @@
+# Node / extension
+node_modules/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Python / backend
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Env & secrets
+.env
+.env.local
+*.pem
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Build artifacts
+*.zip
+coverage/
