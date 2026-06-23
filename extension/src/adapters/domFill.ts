@@ -53,15 +53,34 @@ export function setRadioOrCheckbox(
   group: HTMLInputElement[],
   desiredLabel: string,
 ): boolean {
+  // Standard path: find the option whose label text includes the desired value.
   const target = group.find((input) => {
     const label = labelForControl(input).toLowerCase();
     return label.includes(desiredLabel.trim().toLowerCase());
   });
-  if (!target) return false;
-  target.checked = true;
-  target.dispatchEvent(new Event("input", { bubbles: true }));
-  target.dispatchEvent(new Event("change", { bubbles: true }));
-  return true;
+  if (target) {
+    target.checked = true;
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.dispatchEvent(new Event("change", { bubbles: true }));
+    return true;
+  }
+
+  // Consent/standalone checkbox: when all inputs are checkboxes and the desired
+  // value is affirmative (yes/true/1), check all of them regardless of label text.
+  // This covers cases like "Do you agree to be contacted?" where the checkbox
+  // label IS the question rather than a short "Yes"/"No" option label.
+  const isAffirmative = /^(yes|true|1)$/i.test(desiredLabel.trim());
+  const allCheckboxes = group.every((el) => el.type === "checkbox");
+  if (allCheckboxes && isAffirmative) {
+    for (const cb of group) {
+      cb.checked = true;
+      cb.dispatchEvent(new Event("input", { bubbles: true }));
+      cb.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    return true;
+  }
+
+  return false;
 }
 
 /** Best-effort label text for a control (associated <label>, aria, placeholder). */

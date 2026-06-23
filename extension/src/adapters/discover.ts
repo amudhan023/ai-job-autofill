@@ -37,12 +37,13 @@ export function discoverWithin(root: ParentNode = document): FieldHandle[] {
   // One handle per radio/checkbox group (keyed on the group's shared label).
   for (const [, group] of radioGroups) {
     const representative = group[0];
+    const label = groupLabel(group) || labelForControl(representative);
     const discovered: DiscoveredField = {
       fieldId: nextId(),
-      label: groupLabel(group) || labelForControl(representative),
+      label,
       placeholder: "",
       ariaLabel: representative.getAttribute("aria-label") ?? "",
-      type: "radio",
+      type: group.every((el) => el.type === "checkbox") ? "checkbox" : "radio",
     };
     handles.push({ discovered, element: representative, group });
   }
@@ -72,15 +73,69 @@ function isFillable(el: HTMLElement): boolean {
   return true;
 }
 
-/** Find a shared label for a radio group, e.g. the enclosing fieldset legend. */
+/**
+ * Find the question label for a radio/checkbox group.
+ *
+ * Priority:
+ *  1. fieldset > legend  (most semantic)
+ *  2. [role=radiogroup] aria-labelledby — common in React ATS forms (Ashby,
+ *     Greenhouse). Resolves the referenced element's text.
+ *  3. [role=radiogroup] aria-label
+ *  4. Preceding sibling label/p/h* within the radiogroup's parent container
+ *  5. Walk up to the grand-parent container and try step 4 again
+ *  6. Fall back to labelForControl on the first input
+ */
 function groupLabel(group: HTMLInputElement[]): string {
   const first = group[0];
+
+  // 1. fieldset > legend
   const fieldset = first.closest("fieldset");
   const legend = fieldset?.querySelector("legend");
   if (legend?.textContent) return legend.textContent.trim();
-  const groupAria = first.closest("[role='radiogroup'],[role='group']");
-  const aria = groupAria?.getAttribute("aria-label");
-  if (aria) return aria.trim();
+
+  // 2 & 3. [role=radiogroup] aria attributes
+  const groupEl = first.closest("[role='radiogroup'],[role='group']");
+  if (groupEl) {
+    const labelledby = groupEl.getAttribute("aria-labelledby");
+    if (labelledby) {
+      for (const id of labelledby.trim().split(/\s+/)) {
+        const ref = document.getElementById(id);
+        if (ref?.textContent?.trim()) return ref.textContent.trim();
+      }
+    }
+    const ariaLabel = groupEl.getAttribute("aria-label");
+    if (ariaLabel) return ariaLabel.trim();
+
+    // 4. Preceding sibling within the radiogroup's parent
+    const text = precedingTextSibling(groupEl, group);
+    if (text) return text;
+  }
+
+  // 5. Walk up parent/grandparent of the first radio for a preceding label
+  for (const ancestor of [first.parentElement, first.parentElement?.parentElement]) {
+    if (!ancestor) continue;
+    const text = precedingTextSibling(ancestor, group);
+    if (text) return text;
+  }
+
+  return labelForControl(first);
+}
+
+/**
+ * Look backwards through `el`'s siblings for text-bearing elements that are
+ * NOT part of the radio group itself (i.e. they don't contain any group input).
+ */
+function precedingTextSibling(el: Element, group: HTMLInputElement[]): string {
+  const parent = el.parentElement;
+  if (!parent) return "";
+  const kids = Array.from(parent.children);
+  const idx = kids.indexOf(el);
+  for (let i = idx - 1; i >= 0; i--) {
+    const sib = kids[i];
+    if (group.some((r) => sib.contains(r))) continue; // skip radio-option containers
+    const text = sib.textContent?.trim() ?? "";
+    if (text.length > 3) return text;
+  }
   return "";
 }
 

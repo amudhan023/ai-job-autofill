@@ -78,10 +78,56 @@ describe("setRadioOrCheckbox", () => {
     expect(group[1].checked).toBe(false);
   });
 
-  it("returns false when no label matches", () => {
+  it("selects No option correctly", () => {
+    document.body.innerHTML = `
+      <label><input type="radio" name="prev" value="yes"> Yes</label>
+      <label><input type="radio" name="prev" value="no"> No</label>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='prev']"));
+    expect(setRadioOrCheckbox(group, "No")).toBe(true);
+    expect(group[0].checked).toBe(false);
+    expect(group[1].checked).toBe(true);
+  });
+
+  it("returns false when no label matches a radio group", () => {
     document.body.innerHTML = `<label><input type="radio" name="x"> Maybe</label>`;
     const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='x']"));
     expect(setRadioOrCheckbox(group, "Yes")).toBe(false);
+  });
+
+  it("checks a standalone consent checkbox when value is Yes", () => {
+    document.body.innerHTML = `
+      <label>
+        <input type="checkbox" name="consent" value="agree">
+        Do you agree to allow us to contact you about job opportunities?
+      </label>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='consent']"));
+    expect(setRadioOrCheckbox(group, "Yes")).toBe(true);
+    expect(group[0].checked).toBe(true);
+  });
+
+  it("checks a standalone consent checkbox with 'true' string", () => {
+    document.body.innerHTML = `<label><input type="checkbox" name="c2"> I agree</label>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='c2']"));
+    expect(setRadioOrCheckbox(group, "true")).toBe(true);
+    expect(group[0].checked).toBe(true);
+  });
+
+  it("does NOT check a standalone checkbox when value is No", () => {
+    document.body.innerHTML = `<label><input type="checkbox" name="c3"> I agree</label>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='c3']"));
+    expect(setRadioOrCheckbox(group, "No")).toBe(false);
+    expect(group[0].checked).toBe(false);
+  });
+
+  it("dispatches change events after checking", () => {
+    document.body.innerHTML = `
+      <label><input type="radio" name="ev" value="yes"> Yes</label>
+      <label><input type="radio" name="ev" value="no"> No</label>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='ev']"));
+    let changed = false;
+    group[0].addEventListener("change", () => { changed = true; });
+    setRadioOrCheckbox(group, "Yes");
+    expect(changed).toBe(true);
   });
 });
 

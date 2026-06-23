@@ -63,11 +63,19 @@ export interface Preferences {
   noticePeriod: string;
   remotePreference: "remote" | "hybrid" | "onsite" | "";
   willingToRelocate: boolean;
+  /** Filled into "How did you hear about us?" selects/dropdowns. */
+  hearAboutUs: string;
+  /** Consent checkbox ("agree to contact for opportunities") — default true. */
+  consentToContact: boolean;
+  /** Answer for "previously employed here?" questions — default false → "No". */
+  previouslyEmployedHere: boolean;
 }
 
 export interface ProfileMeta {
   /** Derived total years of experience; used for "years of experience" fields. */
   totalYearsExp: number;
+  /** Original resume file name, set after a successful parse. */
+  resumeFileName?: string;
 }
 
 export interface UserProfile {
@@ -101,6 +109,9 @@ export function emptyProfile(): UserProfile {
       noticePeriod: "",
       remotePreference: "",
       willingToRelocate: false,
+      hearAboutUs: "Job Board",
+      consentToContact: true,
+      previouslyEmployedHere: false,
     },
     meta: { totalYearsExp: 0 },
   };

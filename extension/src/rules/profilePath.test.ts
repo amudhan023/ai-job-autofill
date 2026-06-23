@@ -57,4 +57,11 @@ describe("hasValue", () => {
     expect(hasValue([])).toBe(false);
     expect(hasValue(["a"])).toBe(true);
   });
+
+  it("treats non-null objects as present (needed for fullName/cityState transforms)", () => {
+    expect(hasValue({ firstName: "A", lastName: "B" })).toBe(true);
+    expect(hasValue({ city: "Austin", state: "TX" })).toBe(true);
+    // An empty object still counts as present; the transform decides whether to produce output.
+    expect(hasValue({})).toBe(true);
+  });
 });

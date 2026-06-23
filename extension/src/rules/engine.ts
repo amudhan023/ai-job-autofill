@@ -143,10 +143,9 @@ export function evaluateField(
   };
 }
 
-function formatValue(raw: unknown, rule: FieldRule): string {
-  if (rule.transform) return rule.transform(raw);
-  if (raw === null || raw === undefined) return "";
-  return String(raw);
+function formatValue(raw: unknown, rule: FieldRule): string | null {
+  const result = rule.transform ? rule.transform(raw) : raw === null || raw === undefined ? "" : String(raw);
+  return result.length > 0 ? result : null;
 }
 
 /** Some control types are interchangeable enough not to penalize confidence. */

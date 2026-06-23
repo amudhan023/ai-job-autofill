@@ -13,7 +13,7 @@ function field(partial: Partial<DiscoveredField>): DiscoveredField {
   };
 }
 
-describe("rule engine", () => {
+describe("rule engine — basic fills", () => {
   it("fills first name with high confidence on exact label", () => {
     const p = emptyProfile();
     p.personal.firstName = "Amudhan";
@@ -59,5 +59,160 @@ describe("rule engine", () => {
     const m = evaluateField(field({ label: "Cover Letter", type: "textarea" }), p);
     expect(m.flags).toContain("ai_generate");
     expect(m.value).toBeNull();
+  });
+});
+
+describe("rule engine — full name fields", () => {
+  it("fills Full Name with firstName + lastName", () => {
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.lastName = "Kumar";
+    const m = evaluateField(field({ label: "Full Name", type: "text" }), p);
+    expect(m.ruleId).toBe("fullName");
+    expect(m.value).toBe("Amudhan Kumar");
+  });
+
+  it("fills Preferred Full Name with full name", () => {
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.lastName = "Kumar";
+    const m = evaluateField(field({ label: "Preferred Full Name", type: "text" }), p);
+    expect(m.ruleId).toBe("fullName");
+    expect(m.value).toBe("Amudhan Kumar");
+  });
+
+  it("fills Legal Full Name with full name", () => {
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.lastName = "Kumar";
+    const m = evaluateField(field({ label: "Legal Full Name", type: "text" }), p);
+    expect(m.ruleId).toBe("fullName");
+    expect(m.value).toBe("Amudhan Kumar");
+  });
+
+  it("handles missing lastName in full name", () => {
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    const m = evaluateField(field({ label: "Full Name", type: "text" }), p);
+    expect(m.value).toBe("Amudhan");
+  });
+
+  it("returns null for Full Name when both firstName and lastName are empty", () => {
+    const p = emptyProfile();
+    const m = evaluateField(field({ label: "Full Name", type: "text" }), p);
+    // personal object exists but transform returns empty → no fill
+    expect(m.value).toBeNull();
+  });
+});
+
+describe("rule engine — city/state combined field", () => {
+  it("fills City, State combined field with city + state", () => {
+    const p = emptyProfile();
+    p.personal.location.city = "Austin";
+    p.personal.location.state = "TX";
+    const m = evaluateField(field({ label: "City, State", type: "text" }), p);
+    expect(m.ruleId).toBe("cityState");
+    expect(m.value).toBe("Austin, TX");
+  });
+
+  it("fills individual City field from profile.location.city", () => {
+    const p = emptyProfile();
+    p.personal.location.city = "Austin";
+    const m = evaluateField(field({ label: "City", type: "text" }), p);
+    expect(m.ruleId).toBe("city");
+    expect(m.value).toBe("Austin");
+  });
+
+  it("does NOT use cityState rule for a standalone City field", () => {
+    const p = emptyProfile();
+    p.personal.location.city = "Austin";
+    p.personal.location.state = "TX";
+    const m = evaluateField(field({ label: "City", type: "text" }), p);
+    expect(m.ruleId).toBe("city");
+    expect(m.value).toBe("Austin"); // not "Austin, TX"
+  });
+});
+
+describe("rule engine — company-specific questions", () => {
+  it("fills How did you hear about us from preferences.hearAboutUs", () => {
+    const p = emptyProfile();
+    p.preferences.hearAboutUs = "Job Board";
+    const m = evaluateField(field({ label: "How did you hear about Confluent?", type: "select" }), p);
+    expect(m.ruleId).toBe("howHeard");
+    expect(m.value).toBe("Job Board");
+  });
+
+  it("fills previously employed question with No by default", () => {
+    const p = emptyProfile(); // previouslyEmployedHere = false
+    const m = evaluateField(
+      field({ label: "Have you previously been employed at Confluent?", type: "radio" }),
+      p,
+    );
+    expect(m.ruleId).toBe("prevEmployedHere");
+    expect(m.value).toBe("No");
+  });
+
+  it("fills previously employed question with Yes when profile flag is set", () => {
+    const p = emptyProfile();
+    p.preferences.previouslyEmployedHere = true;
+    const m = evaluateField(
+      field({ label: "Have you previously been employed here?", type: "radio" }),
+      p,
+    );
+    expect(m.value).toBe("Yes");
+  });
+
+  it("fills consent contact checkbox with Yes by default", () => {
+    const p = emptyProfile(); // consentToContact = true
+    const m = evaluateField(
+      field({ label: "Do you agree to allow Confluent to contact you about job opportunities for up to 5 years?", type: "checkbox" }),
+      p,
+    );
+    expect(m.ruleId).toBe("consentContact");
+    expect(m.value).toBe("Yes");
+  });
+
+  it("does not fill consent checkbox when profile consent is false", () => {
+    const p = emptyProfile();
+    p.preferences.consentToContact = false;
+    const m = evaluateField(
+      field({ label: "Do you agree to allow Confluent to contact you about job opportunities?", type: "checkbox" }),
+      p,
+    );
+    expect(m.value).toBe("No");
+  });
+});
+
+describe("rule engine — work authorization", () => {
+  it("fills sponsorship question with No when not needed", () => {
+    const p = emptyProfile();
+    p.workAuth.sponsorshipNeeded = false;
+    const m = evaluateField(
+      field({ label: "Do you now, or will you in the future, require sponsorship for employment visa status?", type: "radio" }),
+      p,
+    );
+    expect(m.ruleId).toBe("sponsorship");
+    expect(m.value).toBe("No");
+  });
+
+  it("fills sponsorship question with Yes when needed", () => {
+    const p = emptyProfile();
+    p.workAuth.sponsorshipNeeded = true;
+    const m = evaluateField(
+      field({ label: "Will you require sponsorship for a work visa?", type: "radio" }),
+      p,
+    );
+    expect(m.value).toBe("Yes");
+  });
+
+  it("fills US authorization as Yes from workAuth.usAuthorized", () => {
+    const p = emptyProfile();
+    p.workAuth.usAuthorized = true;
+    const m = evaluateField(
+      field({ label: "Are you legally authorized to work in the United States?", type: "radio" }),
+      p,
+    );
+    expect(m.ruleId).toBe("usAuthorized");
+    expect(m.value).toBe("Yes");
   });
 });

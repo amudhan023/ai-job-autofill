@@ -12,7 +12,6 @@ function storedProfile() {
 
 describe("Options (profile editor)", () => {
   beforeEach(() => {
-    // Reset the shared zustand store between tests.
     useProfileStore.setState({ profile: emptyProfile(), loaded: false });
   });
 
@@ -56,16 +55,66 @@ describe("Options (profile editor)", () => {
     });
   });
 
-  it("creates an experience entry when editing current company", async () => {
+  it("renders '+ Add experience' button and adds an entry when clicked", async () => {
     render(<Options />);
     await screen.findByText("Your Profile");
 
-    await userEvent.type(screen.getByLabelText("Company"), "Confluent");
+    const addBtn = screen.getByRole("button", { name: /add experience/i });
+    expect(addBtn).toBeInTheDocument();
+
+    await userEvent.click(addBtn);
+
+    // An entry appears with Company field
+    expect(screen.getAllByLabelText("Company")).toHaveLength(1);
+  });
+
+  it("saves experience entry typed into the new entry form", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+
+    await userEvent.click(screen.getByRole("button", { name: /add experience/i }));
+    const companyInput = screen.getByLabelText("Company") as HTMLInputElement;
+    await userEvent.type(companyInput, "Confluent");
+
     await userEvent.click(screen.getByRole("button", { name: /save profile/i }));
 
     await waitFor(async () => {
       const stored = (await storedProfile()) as { userProfile?: { experience: Array<{ company: string }> } };
       expect(stored.userProfile?.experience[0]?.company).toBe("Confluent");
     });
+  });
+
+  it("removes an experience entry when Remove is clicked", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+
+    await userEvent.click(screen.getByRole("button", { name: /add experience/i }));
+    expect(screen.getAllByLabelText("Company")).toHaveLength(1);
+
+    await userEvent.click(screen.getByRole("button", { name: /remove experience 1/i }));
+    expect(screen.queryByLabelText("Company")).not.toBeInTheDocument();
+  });
+
+  it("renders '+ Add education' button and adds an entry when clicked", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+
+    await userEvent.click(screen.getByRole("button", { name: /add education/i }));
+    expect(screen.getByLabelText("School")).toBeInTheDocument();
+  });
+
+  it("renders new preference fields", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+
+    expect(screen.getByLabelText(/how did you hear/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/previously employed/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/consent to be contacted/i)).toBeInTheDocument();
+  });
+
+  it("shows resume upload section", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    expect(screen.getByLabelText("Resume file")).toBeInTheDocument();
   });
 });

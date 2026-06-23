@@ -61,6 +61,29 @@ export class BackendClient {
     }
   }
 
+  async parseResume(file: File): Promise<UserProfile> {
+    const form = new FormData();
+    form.append("file", file);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const res = await fetch(`${this.baseUrl}/resume/parse`, {
+        method: "POST",
+        body: form,
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`backend /resume/parse ${res.status}`);
+      return (await res.json()) as UserProfile;
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error(`backend /resume/parse timed out after ${this.timeoutMs}ms`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   classify(question: string): Promise<{ category: string }> {
     return this.post("/ai/classify", { question });
   }

@@ -26,5 +26,6 @@ export function hasValue(value: unknown): boolean {
   if (typeof value === "number") return !Number.isNaN(value);
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "boolean") return true;
+  if (typeof value === "object") return true; // objects (e.g. PersonalInfo, Location) for transforms
   return false;
 }
