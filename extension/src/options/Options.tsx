@@ -218,30 +218,32 @@ interface ResumeUploadSectionProps {
 function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: ResumeUploadSectionProps) {
   const [status, setStatus] = useState<"idle" | "parsing" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  const [backendUrl, setBackendUrl] = useState<string | null>(null);
+  const [backendUrl, setBackendUrl] = useState<string>("http://localhost:8000");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    void loadBackendUrl().then((u) => setBackendUrl(u ?? null));
+    void loadBackendUrl().then(setBackendUrl);
   }, []);
 
   const onFile = async (file: File | undefined) => {
     if (!file) return;
-    if (!backendUrl) {
-      setErrorMsg("Configure a backend URL in the Settings tab to enable resume parsing.");
-      setStatus("error");
-      return;
-    }
     setStatus("parsing");
     setErrorMsg("");
+    const url = backendUrl ?? "http://localhost:8000";
     try {
-      const client = new BackendClient(backendUrl.replace(/\/$/, ""));
+      const client = new BackendClient(url.replace(/\/$/, ""));
       const parsed = await client.parseResume(file);
       onFileNameChange(file.name);
       onParsed(parsed as ReturnType<typeof import("@/shared/profile").emptyProfile>);
       setStatus("done");
     } catch (e) {
-      setErrorMsg(e instanceof Error ? e.message : "Parse failed");
+      const msg = e instanceof Error ? e.message : "Parse failed";
+      const isConnectionError = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("timed out");
+      setErrorMsg(
+        isConnectionError
+          ? `Cannot reach backend at ${url}. Start it with: cd backend && source venv/bin/activate && uvicorn app.main:app --reload`
+          : msg,
+      );
       setStatus("error");
     }
   };
@@ -256,7 +258,9 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
       </div>
       <p className="mb-3 text-xs text-gray-500">
         Upload a PDF or DOCX to automatically populate experience, education, and skills.
-        Requires the AI backend to be configured in Settings.
+        Connects to the local backend (<code>localhost:8000</code>). With an{" "}
+        <code>ANTHROPIC_API_KEY</code> in <code>backend/.env</code> it does full AI extraction;
+        without one it still extracts name, email, phone, and links via regex.
       </p>
       <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
         <input
@@ -365,7 +369,7 @@ function SettingsPanel() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    void loadBackendUrl().then((v) => setUrl(v ?? ""));
+    void loadBackendUrl().then(setUrl);
   }, []);
 
   const onSave = async () => {
@@ -377,10 +381,13 @@ function SettingsPanel() {
     <div>
       <h2 className="mb-1 text-lg font-semibold">AI backend</h2>
       <p className="mb-4 text-sm text-gray-500">
-        Optional. Set a backend URL to enable resume parsing, AI free-text answers and cover
-        letters. Leave blank to stay fully local (deterministic autofill only).
+        Set a backend URL to enable resume parsing and AI free-text answers.
+        Defaults to <code>http://localhost:8000</code> — start the local server with:
+        <code className="ml-1 rounded bg-gray-100 px-1">uvicorn app.main:app --reload</code>
+        (from the <code>backend/</code> folder). Add your <code>ANTHROPIC_API_KEY</code> to
+        <code className="ml-1 rounded bg-gray-100 px-1">backend/.env</code> for AI-powered parsing.
       </p>
-      <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="https://api.yourdomain.com" />
+      <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="http://localhost:8000" />
       <div className="mt-4 flex items-center gap-3">
         <button onClick={onSave} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">
           Save settings

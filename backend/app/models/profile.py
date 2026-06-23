@@ -64,10 +64,14 @@ class Preferences(BaseModel):
     noticePeriod: str = ""
     remotePreference: str = ""
     willingToRelocate: bool = False
+    hearAboutUs: str = "Job Board"
+    consentToContact: bool = True
+    previouslyEmployedHere: bool = False
 
 
 class ProfileMeta(BaseModel):
     totalYearsExp: int = 0
+    resumeFileName: str | None = None
 
 
 class UserProfile(BaseModel):
