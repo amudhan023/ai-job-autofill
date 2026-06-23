@@ -5,6 +5,9 @@ platforms. **Deterministic first** (zero hallucinations on structured fields),
 **AI-assisted** for free-text answers, with **transparent confidence scoring**
 that keeps the user in control.
 
+> **New here? Read the [Complete Guide](./docs/GUIDE.md)** — how it works,
+> install, load into Chrome for testing, and use the autofill feature.
+>
 > Full product & architecture spec: [`PLAN.md`](./PLAN.md).
 > Implementation status & decisions: [`docs/IMPLEMENTATION.md`](./docs/IMPLEMENTATION.md).
 
