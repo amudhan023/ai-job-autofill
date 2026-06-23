@@ -8,11 +8,16 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     env: str = "dev"
-    cors_origins: str = "chrome-extension://*"
+    # Regex of allowed CORS origins. Must be a regex (not literal) so the
+    # extension's dynamic origin `chrome-extension://<id>` actually matches.
+    cors_origin_regex: str = r"chrome-extension://.*|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?"
 
     # AI keys (optional; AI endpoints are stubbed until set).
     anthropic_api_key: str = ""
     voyage_api_key: str = ""
+
+    # Deterministic fake-AI mode for integration tests / local dev without keys.
+    use_fake_ai: bool = False
 
     # Model IDs — defaults match PLAN.md §3 (corrected: opus-4-8, voyage embeddings).
     resume_model: str = "claude-sonnet-4-6"
@@ -27,7 +32,7 @@ class Settings(BaseSettings):
 
     @property
     def ai_enabled(self) -> bool:
-        return bool(self.anthropic_api_key)
+        return bool(self.anthropic_api_key) or self.use_fake_ai
 
 
 settings = Settings()

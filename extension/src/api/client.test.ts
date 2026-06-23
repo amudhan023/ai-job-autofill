@@ -38,6 +38,17 @@ describe("BackendClient", () => {
     const client = new BackendClient("https://api.example");
     await expect(client.extractJD("text")).rejects.toThrow(/500/);
   });
+
+  it("passes an abort signal and surfaces a timeout error", async () => {
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+      // Simulate an aborted request.
+      throw Object.assign(new Error("aborted"), { name: "AbortError" });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const client = new BackendClient("https://api.example", 10);
+    await expect(client.classify("q")).rejects.toThrow(/timed out/);
+  });
 });
 
 describe("getBackendClient", () => {

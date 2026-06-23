@@ -47,8 +47,20 @@ context and exercises the real production path:
   and the form is **never submitted**.
 
 ### 4. Backend (pytest + FastAPI TestClient)
-Health/model-id contract, profile CRUD round-trip, 404s, and stubbed AI/resume
-endpoints returning safe defaults without keys.
+Health/model-id contract, profile CRUD round-trip, 404s, stubbed AI/resume
+endpoints, plus regression tests for issues found in integration (CORS origin
+regex, resume 422, fake-AI mode).
+
+### 5. Docker integration E2E (the cross-process layer)
+A live backend **container** + the real built extension driven by Playwright —
+the only layer that exercises the extension↔backend contract over real HTTP,
+including the `chrome-extension://` CORS preflight. Runs in `USE_FAKE_AI` mode for
+deterministic AI. See [`integration/README.md`](../integration/README.md).
+
+```bash
+docker compose -f integration/docker-compose.yml up --build \
+  --abort-on-container-exit --exit-code-from e2e
+```
 
 ## Commands
 

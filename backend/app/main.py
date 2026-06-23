@@ -19,7 +19,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.cors_origins.split(",")],
+    # Regex match — required because the extension origin `chrome-extension://<id>`
+    # is dynamic and cannot be enumerated as a literal allow_origins entry.
+    allow_origin_regex=settings.cors_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )

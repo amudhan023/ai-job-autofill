@@ -77,12 +77,20 @@ class VoyageEmbeddings:
 
 
 def get_llm() -> LLM | None:
+    if settings.use_fake_ai:
+        from app.services.fakes import make_server_fake_llm  # lazy to avoid cycles
+
+        return make_server_fake_llm()
     if not settings.anthropic_api_key:
         return None
     return AnthropicLLM(settings.anthropic_api_key)
 
 
 def get_embeddings() -> Embeddings | None:
+    if settings.use_fake_ai:
+        from app.services.fakes import FakeEmbeddings
+
+        return FakeEmbeddings()
     if not settings.voyage_api_key:
         return None
     return VoyageEmbeddings(settings.voyage_api_key, settings.embedding_model)

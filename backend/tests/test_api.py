@@ -40,7 +40,8 @@ def test_get_unknown_profile_404() -> None:
 
 
 def test_resume_parse_stub_returns_empty_profile_without_key() -> None:
-    files = {"file": ("resume.pdf", b"%PDF-1.4 fake", "application/pdf")}
+    # A VALID (parseable) file with no AI configured → empty stub profile.
+    files = {"file": ("resume.txt", b"Jane Doe\nStaff Engineer", "text/plain")}
     res = client.post("/resume/parse", files=files)
     assert res.status_code == 200
     # Stub path returns a blank profile (no AI key configured).

@@ -1,0 +1,34 @@
+# Docker-based integration E2E: a live backend container + a Playwright runner
+# that drives the real built extension against it.
+#
+#   docker compose -f integration/docker-compose.yml up --build --abort-on-container-exit --exit-code-from e2e
+#
+# The `e2e` service's exit code is the suite result.
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      # Deterministic AI so integration assertions are stable without API keys.
+      USE_FAKE_AI: "1"
+      ENV: "test"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  e2e:
+    build:
+      context: ..
+      dockerfile: integration/Dockerfile.e2e
+    environment:
+      BACKEND_URL: "http://backend:8000"
+      E2E_PORT: "5566"
+      CI: "1"
+    depends_on:
+      backend:
+        condition: service_healthy

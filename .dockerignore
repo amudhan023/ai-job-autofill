@@ -1,0 +1,14 @@
+# Build context for integration/Dockerfile.e2e (context = repo root).
+**/node_modules
+**/dist
+**/venv
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/playwright-report
+**/test-results
+**/.vite
+.git
+*.log

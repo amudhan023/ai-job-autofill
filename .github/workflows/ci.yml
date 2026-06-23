@@ -65,3 +65,14 @@ jobs:
 
       - name: Run tests
         run: python -m pytest -q
+
+  integration:
+    name: Integration (Docker — extension ↔ backend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run dockerized integration E2E
+        run: |
+          docker compose -f integration/docker-compose.yml up --build \
+            --abort-on-container-exit --exit-code-from e2e

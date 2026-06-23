@@ -1,0 +1,21 @@
+# Playwright + Chromium runner for integration E2E. Version MUST match the
+# @playwright/test version in extension/package.json so bundled browsers align.
+FROM mcr.microsoft.com/playwright:v1.47.2-jammy
+
+WORKDIR /app/extension
+
+# Install deps first for layer caching.
+COPY extension/package.json extension/package-lock.json ./
+RUN npm ci
+
+# Ensure the Chromium build used by the extension tests is present.
+RUN npx playwright install chromium
+
+# App source (node_modules excluded via .dockerignore so npm ci layer is kept).
+COPY extension/ ./
+
+# Build the extension (dist/) that the integration tests load.
+RUN npm run build
+
+# Runs the contract + extension<->backend integration specs.
+CMD ["npx", "playwright", "test", "--config", "playwright.integration.config.ts"]

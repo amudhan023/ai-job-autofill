@@ -24,24 +24,40 @@ Return ONLY a JSON object with this shape (omit unknown fields, never invent):
 Do not hallucinate values that are not present in the resume text."""
 
 
+class ResumeExtractionError(Exception):
+    """Raised when a resume file cannot be parsed into text."""
+
+
 def extract_text(filename: str, content: bytes) -> str:
-    """Extract plain text from a PDF/DOCX/txt resume (lazy imports)."""
+    """Extract plain text from a PDF/DOCX/txt resume (lazy imports).
+
+    Raises ResumeExtractionError on malformed/unsupported input so callers can
+    return a 422 rather than surfacing a vendor stack trace as a 500.
+    """
     name = filename.lower()
-    if name.endswith(".pdf"):
-        from io import BytesIO
+    try:
+        if name.endswith(".pdf"):
+            from io import BytesIO
 
-        from pdfminer.high_level import extract_text as pdf_extract  # lazy
+            from pdfminer.high_level import extract_text as pdf_extract  # lazy
 
-        return pdf_extract(BytesIO(content))
-    if name.endswith(".docx"):
-        from io import BytesIO
+            text = pdf_extract(BytesIO(content))
+        elif name.endswith(".docx"):
+            from io import BytesIO
 
-        import docx  # lazy (python-docx)
+            import docx  # lazy (python-docx)
 
-        document = docx.Document(BytesIO(content))
-        return "\n".join(p.text for p in document.paragraphs)
-    # Plain text / unknown — best effort.
-    return content.decode("utf-8", errors="ignore")
+            document = docx.Document(BytesIO(content))
+            text = "\n".join(p.text for p in document.paragraphs)
+        else:
+            # Plain text / unknown — best effort.
+            text = content.decode("utf-8", errors="ignore")
+    except Exception as exc:  # noqa: BLE001 — normalize any parser failure
+        raise ResumeExtractionError(f"could not read resume '{filename}': {exc}") from exc
+
+    if not text.strip():
+        raise ResumeExtractionError(f"no text extracted from '{filename}'")
+    return text
 
 
 def parse_resume_text(text: str, llm: LLM) -> UserProfile:
@@ -59,8 +75,11 @@ def parse_resume_text(text: str, llm: LLM) -> UserProfile:
 async def parse_resume(
     filename: str, content: bytes, llm: LLM | None = None
 ) -> UserProfile:
+    # Extract (and thereby validate) the file first, so a malformed upload always
+    # fails fast with a clear error — regardless of whether AI is configured —
+    # rather than silently returning an empty profile.
+    text = extract_text(filename, content)
     client = llm or get_llm()
     if client is None:
-        return UserProfile()  # no key — safe stub
-    text = extract_text(filename, content)
+        return UserProfile()  # valid file but no AI configured — safe stub
     return parse_resume_text(text, client)

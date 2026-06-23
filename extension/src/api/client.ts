@@ -32,16 +32,33 @@ export interface AnswerRequest {
 }
 
 export class BackendClient {
-  constructor(private baseUrl: string) {}
+  constructor(
+    private baseUrl: string,
+    private timeoutMs = 20_000,
+  ) {}
 
   private async post<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`backend ${path} ${res.status}`);
-    return (await res.json()) as T;
+    // Bound every request so a hung/unreachable backend can't wedge the service
+    // worker indefinitely.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      const res = await fetch(`${this.baseUrl}${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`backend ${path} ${res.status}`);
+      return (await res.json()) as T;
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error(`backend ${path} timed out after ${this.timeoutMs}ms`);
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   classify(question: string): Promise<{ category: string }> {
