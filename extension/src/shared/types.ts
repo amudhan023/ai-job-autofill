@@ -4,8 +4,16 @@
 
 import type { UserProfile } from "./profile";
 
-/** Supported ATS platforms (Phase 1 MVP set). */
-export type ATSPlatform = "greenhouse" | "lever" | "ashby" | "unknown";
+/** Supported ATS platforms (Phase 1 + Phase 2). */
+export type ATSPlatform =
+  | "greenhouse"
+  | "lever"
+  | "ashby"
+  | "workday"
+  | "icims"
+  | "smartrecruiters"
+  | "bamboohr"
+  | "unknown";
 
 /** Input control kinds the fill engine knows how to write. */
 export type FieldType =

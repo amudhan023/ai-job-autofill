@@ -56,7 +56,7 @@ export async function listApplications(): Promise<ApplicationRecord[]> {
   return records.sort((a, b) => b.date - a.date);
 }
 
-function companyFromUrl(url: string): string {
+export function companyFromUrl(url: string): string {
   try {
     const u = new URL(url);
     // jobs.lever.co/{company}/... or boards.greenhouse.io/{company}/...

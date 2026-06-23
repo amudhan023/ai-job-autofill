@@ -297,15 +297,17 @@ CloudWatch + Grafana Cloud
 
 ## 9. MVP Roadmap
 
-| Phase | Weeks | Goal | Effort |
-|---|---|---|---|
-| **1 — Basic Autofill** | 1–8 | 80% of structured fields on Greenhouse + Lever + Ashby; rule engine; confidence badges; local history | 2 eng |
-| **2 — ATS Coverage** | 9–16 | 10 ATS incl. Workday, iCIMS, LinkedIn Easy Apply; remote adapter config; profile sync | 3 eng |
-| **3 — AI Answers** | 17–24 | Resume parse, JD extraction, RAG, classifier, behavioral/motivation gen; LangSmith | 3 eng |
-| **4 — Cover Letters & Polish** | 25–32 | Cover letters (Opus), analytics dashboard, onboarding, CWS launch | 2–3 eng |
-| **5 — Agentic Workflows** | 33–52 | Multi-tab orchestration, job-search integration, "apply to N" agent | Full team |
+| Phase | Weeks | Goal | Effort | Status |
+|---|---|---|---|---|
+| **1 — Basic Autofill** | 1–8 | 80% of structured fields on Greenhouse + Lever + Ashby; rule engine; confidence badges; local history | 2 eng | ✅ done |
+| **2 — ATS Coverage** | 9–16 | 10 ATS incl. Workday, iCIMS, SmartRecruiters, BambooHR; remote adapter config | 3 eng | ✅ done |
+| **3 — AI Answers** | 17–24 | Resume parse, JD extraction, RAG, classifier, behavioral/motivation gen; LangSmith | 3 eng | 🚧 scaffolded |
+| **4 — Cover Letters & Polish** | 25–32 | Cover letters (Opus), analytics dashboard, onboarding, CWS launch | 2–3 eng | ⬜ planned |
+| **5 — Agentic Workflows** | 33–52 | Multi-tab orchestration, job-search integration, "apply to N" agent | Full team | ⬜ planned |
 
-**This repo = Phase 1 foundation.**
+**Testing** (unit · component/UI · E2E · backend · CI) is established and runs
+green — see [`docs/TESTING.md`](./docs/TESTING.md). Phases 1–2 are implemented and
+verified; Phase 3 backend services are scaffolded and stubbed.
 
 ---
 

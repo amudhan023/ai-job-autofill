@@ -3,6 +3,10 @@ import type { ATSPlatform } from "@/shared/types";
 import { GreenhouseAdapter } from "./greenhouse";
 import { LeverAdapter } from "./lever";
 import { AshbyAdapter } from "./ashby";
+import { WorkdayAdapter } from "./workday";
+import { IcimsAdapter } from "./icims";
+import { SmartRecruitersAdapter } from "./smartrecruiters";
+import { BambooHrAdapter } from "./bamboohr";
 
 /** Detection threshold per the plan: 70+ triggers adapter load. */
 export const DETECTION_THRESHOLD = 70;
@@ -11,6 +15,10 @@ const ADAPTERS: ATSAdapter[] = [
   new GreenhouseAdapter(),
   new LeverAdapter(),
   new AshbyAdapter(),
+  new WorkdayAdapter(),
+  new IcimsAdapter(),
+  new SmartRecruitersAdapter(),
+  new BambooHrAdapter(),
 ];
 
 export interface DetectionOutcome {

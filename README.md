@@ -34,10 +34,16 @@ npm install
 npm run build      # outputs dist/ (load unpacked in chrome://extensions)
 npm run typecheck  # tsc --noEmit
 npm run dev        # watch build
+
+# Tests
+npm run test               # unit + component (Vitest + jsdom + Testing Library)
+npx playwright install chromium   # once, for E2E
+npm run test:e2e           # end-to-end against real built extension
+npm run test:all           # typecheck → unit → build → e2e
 ```
 
 Load `extension/dist/` as an unpacked extension at `chrome://extensions`
-(Developer mode on).
+(Developer mode on). Full testing strategy: [`docs/TESTING.md`](./docs/TESTING.md).
 
 ## Quick start — backend
 

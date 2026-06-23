@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Acme — Apply (Greenhouse fixture)</title>
+  </head>
+  <body class="greenhouse-application">
+    <h1>Apply for Staff Engineer at Acme</h1>
+    <form id="application_form" class="greenhouse">
+      <div id="field_order_1"></div>
+      <input id="job_application_marker" type="hidden" />
+
+      <p>
+        <label for="fn">First Name</label>
+        <input id="fn" type="text" />
+      </p>
+      <p>
+        <label for="ln">Last Name</label>
+        <input id="ln" type="text" />
+      </p>
+      <p>
+        <label for="em">Email</label>
+        <input id="em" type="email" />
+      </p>
+      <p>
+        <label for="ph">Phone</label>
+        <input id="ph" type="tel" />
+      </p>
+      <p>
+        <label for="li">LinkedIn Profile</label>
+        <input id="li" type="url" />
+      </p>
+      <p>
+        <label for="gh">GitHub</label>
+        <input id="gh" type="url" />
+      </p>
+      <fieldset>
+        <legend>Are you legally authorized to work in the US?</legend>
+        <label><input type="radio" name="auth" value="yes" /> Yes</label>
+        <label><input type="radio" name="auth" value="no" /> No</label>
+      </fieldset>
+      <p>
+        <label for="sal">Expected Salary</label>
+        <input id="sal" type="text" />
+      </p>
+      <p>
+        <label for="cl">Cover Letter</label>
+        <textarea id="cl"></textarea>
+      </p>
+      <p>
+        <label for="ssn">Social Security Number</label>
+        <input id="ssn" type="text" />
+      </p>
+
+      <button type="submit" id="submitBtn">Submit Application</button>
+    </form>
+  </body>
+</html>

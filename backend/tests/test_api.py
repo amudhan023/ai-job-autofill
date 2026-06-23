@@ -1,0 +1,61 @@
+"""Backend API tests (skeleton phase). Uses FastAPI's TestClient."""
+from __future__ import annotations
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_health_reports_models_and_ai_disabled_by_default() -> None:
+    res = client.get("/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] == "ok"
+    # Corrected model IDs from the plan changelog.
+    assert body["models"]["cover_letter"] == "claude-opus-4-8"
+    assert body["models"]["embedding"] == "voyage-3.5-lite"
+    # No key configured in test env → AI stubbed.
+    assert body["ai_enabled"] is False
+
+
+def test_profile_put_then_get_roundtrips() -> None:
+    profile = {
+        "personal": {"firstName": "Amudhan", "lastName": "Shanmugam", "email": "a@example.com"},
+        "meta": {"totalYearsExp": 18},
+    }
+    put = client.put("/profile/u1", json=profile)
+    assert put.status_code == 200
+    assert put.json()["personal"]["firstName"] == "Amudhan"
+
+    got = client.get("/profile/u1")
+    assert got.status_code == 200
+    assert got.json()["personal"]["lastName"] == "Shanmugam"
+    assert got.json()["meta"]["totalYearsExp"] == 18
+
+
+def test_get_unknown_profile_404() -> None:
+    assert client.get("/profile/does-not-exist").status_code == 404
+
+
+def test_resume_parse_stub_returns_empty_profile_without_key() -> None:
+    files = {"file": ("resume.pdf", b"%PDF-1.4 fake", "application/pdf")}
+    res = client.post("/resume/parse", files=files)
+    assert res.status_code == 200
+    # Stub path returns a blank profile (no AI key configured).
+    assert res.json()["personal"]["firstName"] == ""
+
+
+def test_ai_answer_stub_flags_stubbed() -> None:
+    res = client.post("/ai/answer", json={"question": "Tell me about a time...", "jd_summary": ""})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["stubbed"] is True
+    assert body["model"] == "claude-sonnet-4-6"
+
+
+def test_ai_jd_stub_returns_empty_extract() -> None:
+    res = client.post("/ai/jd", json={"jd_text": "We need a Staff Engineer..."})
+    assert res.status_code == 200
+    assert res.json()["requiredSkills"] == []
