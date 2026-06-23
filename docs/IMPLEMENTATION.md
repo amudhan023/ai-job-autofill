@@ -42,6 +42,41 @@ Tracks what is actually built vs. the roadmap in [`PLAN.md`](../PLAN.md).
 
 See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
 
+## Phase 3 (AI answers) — ✅ implemented (behind injectable LLM)
+
+| Area | Status | Location |
+|---|---|---|
+| LLM + embeddings provider abstraction (+ fakes) | ✅ | `backend/app/services/llm.py`, `fakes.py` |
+| Resume parse (text extract → Claude → profile) | ✅ | `backend/app/services/resume.py` |
+| JD extraction + skill gap | ✅ | `backend/app/services/jd.py` |
+| Question classifier (LLM + keyword fallback) | ✅ | `backend/app/services/classifier.py` |
+| In-memory RAG (chunk + cosine) | ✅ | `backend/app/services/rag.py` |
+| STAR answer generation | ✅ | `backend/app/services/answers.py` |
+| Extension backend client + AI proxy + JD scraper | ✅ | `extension/src/api/`, `content/jdScraper.ts` |
+
+## Phase 4 (cover letters & polish) — ✅ implemented
+
+| Area | Status | Location |
+|---|---|---|
+| Cover letter generation (Opus) + styles | ✅ | `backend/app/services/cover_letter.py` |
+| Analytics dashboard (fill rate, AI assist, by platform) | ✅ | `extension/src/options/Dashboard.tsx`, `storage/analytics.ts` |
+| Onboarding flow (welcome → resume → review) | ✅ | `extension/src/options/Onboarding.tsx` |
+| Settings (AI backend URL) | ✅ | `extension/src/options/Options.tsx`, `storage/settings.ts` |
+| Keyboard shortcut (Alt+Shift+F) | ✅ | `manifest.json` + `background/index.ts` |
+| CWS launch docs (privacy, store listing) | ✅ | `docs/PRIVACY.md`, `docs/STORE_LISTING.md` |
+
+## Phase 5 (agentic workflows) — ✅ implemented (human-in-the-loop)
+
+| Area | Status | Location |
+|---|---|---|
+| Job-search provider interface + match scoring | ✅ | `backend/app/services/job_search.py` |
+| "Apply to N" orchestration state machine | ✅ | `backend/app/services/orchestration.py` |
+| Job ranking endpoint | ✅ | `backend/app/api/jobs.py` |
+
+**Zero-mutation upheld at the orchestration layer**: the planner halts every
+application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
+`SUBMITTED_BY_USER`. There is no automated edge to submission.
+
 ## Key decisions
 
 - **Zero-mutation guarantee** is enforced in the content script: it has no code path
@@ -56,13 +91,16 @@ See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
   path" principle. See `PLAN.md` changelog.
 - **Model IDs**: cover-letter model corrected to `claude-opus-4-8`.
 
-## Not yet built (later phases)
-- **Phase 3** — Resume parsing pipeline, JD extraction, RAG, AI answer generation.
-  Backend services are scaffolded and stubbed (`backend/app/services/`).
-- **Phase 4** — Cover letters (Opus), analytics dashboard, onboarding, CWS launch.
-- **Phase 5** — Multi-tab agentic orchestration, job-search integration.
-- Backend persistence (Postgres/pgvector), Auth0, real AI orchestration — currently
-  stubbed with in-memory behavior so the service runs end-to-end.
+## Requires keys / infra to go live (logic is built + tested with fakes)
+- **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) to switch
+  the injectable providers from stub → real. All service logic is unit-tested
+  with `FakeLLM`/`FakeEmbeddings`; live calls are the only untested edge.
+- **Persistence**: profile store and RAG are in-memory; swap for Postgres +
+  pgvector (storage concern only — interfaces are stable).
+- **Auth0, real job-board APIs (LinkedIn/Indeed)**: plug concrete `JobProvider`
+  implementations behind the existing interface; needs partner credentials.
+- **Real resume binary parsing**: `pdfminer.six` / `python-docx` are wired and
+  imported lazily; exercised via text-level unit tests.
 
 ## How to verify
 - Extension: `cd extension && npm install && npm run test:all`

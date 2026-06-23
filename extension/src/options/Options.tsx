@@ -2,10 +2,15 @@ import { useEffect, useState } from "react";
 import { useProfileStore } from "@/storage/store";
 import type { Experience, Education } from "@/shared/profile";
 import { CheckField, Section, TextField } from "./Field";
+import { Dashboard } from "./Dashboard";
+import { loadBackendUrl, saveBackendUrl } from "@/storage/settings";
+
+type Tab = "profile" | "applications" | "settings";
 
 export function Options() {
   const { profile, loaded, hydrate, setProfile, persist } = useProfileStore();
   const [saved, setSaved] = useState(false);
+  const [tab, setTab] = useState<Tab>("profile");
 
   useEffect(() => {
     void hydrate();
@@ -30,6 +35,26 @@ export function Options() {
 
   return (
     <div className="mx-auto max-w-3xl p-8 font-sans">
+      <nav className="mb-6 flex gap-1 border-b" role="tablist">
+        {(["profile", "applications", "settings"] as Tab[]).map((t) => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className={`px-3 py-2 text-sm capitalize ${
+              tab === t ? "border-b-2 border-blue-600 font-medium text-blue-700" : "text-gray-500"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "applications" && <Dashboard />}
+      {tab === "settings" && <SettingsPanel />}
+      {tab !== "profile" ? null : (
+      <>
       <h1 className="mb-1 text-xl font-bold text-gray-900">Your Profile</h1>
       <p className="mb-6 text-sm text-gray-500">
         Stored locally on this device. Used to autofill applications. Nothing is
@@ -107,6 +132,39 @@ export function Options() {
         <button onClick={onSave}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
           Save profile
+        </button>
+        {saved && <span className="text-sm text-green-600">Saved ✓</span>}
+      </div>
+      </>
+      )}
+    </div>
+  );
+}
+
+function SettingsPanel() {
+  const [url, setUrl] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    void loadBackendUrl().then((v) => setUrl(v ?? ""));
+  }, []);
+
+  const onSave = async () => {
+    await saveBackendUrl(url.trim());
+    setSaved(true);
+  };
+
+  return (
+    <div>
+      <h2 className="mb-1 text-lg font-semibold">AI backend</h2>
+      <p className="mb-4 text-sm text-gray-500">
+        Optional. Set a backend URL to enable AI free-text answers and cover
+        letters. Leave blank to stay fully local (deterministic autofill only).
+      </p>
+      <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="https://api.yourdomain.com" />
+      <div className="mt-4 flex items-center gap-3">
+        <button onClick={onSave} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">
+          Save settings
         </button>
         {saved && <span className="text-sm text-green-600">Saved ✓</span>}
       </div>

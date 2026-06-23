@@ -8,7 +8,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, profile, resume
+from app.api import ai, jobs, profile, resume
 from app.core.config import settings
 
 app = FastAPI(
@@ -27,6 +27,7 @@ app.add_middleware(
 app.include_router(profile.router)
 app.include_router(resume.router)
 app.include_router(ai.router)
+app.include_router(jobs.router)
 
 
 @app.get("/health", tags=["meta"])

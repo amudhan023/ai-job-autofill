@@ -18,15 +18,21 @@ uvicorn app.main:app --reload
 - Docs: http://localhost:8000/docs
 - Health: http://localhost:8000/health
 
-## Endpoints (skeleton)
+## Endpoints
 
-| Method | Path | Status |
+| Method | Path | Notes |
 |---|---|---|
-| GET | `/health` | ✅ live |
-| GET/PUT | `/profile/{user_id}` | ✅ in-memory |
-| POST | `/resume/parse` | 🚧 stub (Phase 3) |
-| POST | `/ai/jd` | 🚧 stub (Phase 3) |
-| POST | `/ai/answer` | 🚧 stub (Phase 3) |
+| GET | `/health` | live; reports model IDs + `ai_enabled` |
+| GET/PUT | `/profile/{user_id}` | in-memory (swap for Postgres) |
+| POST | `/resume/parse` | PDF/DOCX → Claude → profile (stub without key) |
+| POST | `/ai/classify` | question category (keyword + LLM) |
+| POST | `/ai/jd` | JD structured extraction |
+| POST | `/ai/answer` | RAG + STAR free-text answer |
+| POST | `/ai/cover-letter` | cover letter (Opus), styles |
+| POST | `/jobs/rank` | deterministic job–candidate match ranking |
+
+AI endpoints run real logic when `ANTHROPIC_API_KEY` is set; otherwise they
+return safe stubs. All logic is unit-tested with fakes (`app/services/fakes.py`).
 
 ## Models
 See `app/core/config.py`. Defaults follow `PLAN.md` §3 (cover letter =

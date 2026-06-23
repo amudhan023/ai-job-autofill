@@ -32,6 +32,7 @@ export async function recordApplication(result: FillResult): Promise<Application
     date: result.timestamp,
     fieldsFilled: result.filledCount,
     fieldsTotal: result.totalFields,
+    aiAssisted: result.matches.filter((m) => m.flags.includes("ai_generate")).length,
   };
   const db = await openDB();
   await new Promise<void>((resolve, reject) => {

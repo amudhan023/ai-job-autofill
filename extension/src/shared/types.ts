@@ -83,6 +83,8 @@ export interface ApplicationRecord {
   date: number;
   fieldsFilled: number;
   fieldsTotal: number;
+  /** Count of fields flagged for AI free-text assistance. */
+  aiAssisted: number;
 }
 
 // ---- Messaging contract (typed chrome.runtime / chrome.tabs messages) ----
