@@ -6,6 +6,7 @@
 import type { FillResult } from "@/shared/types";
 import { recordApplication } from "@/storage/history";
 import { loadProfile } from "@/storage/profile";
+import { getCachedAnswer, putCachedAnswer } from "@/storage/answerCache";
 import {
   getBackendClient,
   type AnswerResponse,
@@ -13,10 +14,17 @@ import {
 } from "@/api/client";
 
 interface InternalMessage {
-  type: "FILL_DONE" | "CONTENT_READY" | "REQUEST_AI_ANSWER" | "REQUEST_COVER_LETTER" | "OPEN_DASHBOARD";
+  type:
+    | "FILL_DONE"
+    | "CONTENT_READY"
+    | "REQUEST_AI_ANSWER"
+    | "REQUEST_COVER_LETTER"
+    | "REQUEST_CLASSIFY_BATCH"
+    | "OPEN_DASHBOARD";
   result?: FillResult;
   url?: string;
   question?: string;
+  questions?: string[];
   jdSummary?: string;
   company?: string;
   style?: "formal" | "startup" | "creative";
@@ -64,15 +72,34 @@ async function handle(message: InternalMessage): Promise<unknown> {
       return { ok: true, record };
     }
     case "REQUEST_AI_ANSWER": {
+      const question = message.question ?? "";
+      // Cache first (M5): repeat questions across applications are free.
+      const cached = await getCachedAnswer(question);
+      if (cached) {
+        return { ok: true, answer: { answer: cached.answer, category: cached.category, model: cached.model }, cached: true };
+      }
       const client = await getBackendClient();
       if (!client) return { ok: false, error: "AI backend not configured" };
       const profile = await loadProfile();
       const res: AnswerResponse = await client.answer({
-        question: message.question ?? "",
+        question,
         jd_summary: message.jdSummary ?? "",
         experience: profile.experience,
       });
-      return { ok: true, answer: res };
+      if (res.answer && !res.stubbed) {
+        await putCachedAnswer(question, {
+          answer: res.answer,
+          category: res.category,
+          model: res.model,
+        });
+      }
+      return { ok: true, answer: res, cached: false };
+    }
+    case "REQUEST_CLASSIFY_BATCH": {
+      const client = await getBackendClient();
+      if (!client) return { ok: false, error: "AI backend not configured" };
+      const res = await client.classifyBatch(message.questions ?? []);
+      return { ok: true, categories: res.categories };
     }
     case "REQUEST_COVER_LETTER": {
       const client = await getBackendClient();

@@ -11,8 +11,10 @@
 import type { ExtensionMessage, ExtensionResponse } from "@/shared/types";
 import { loadProfile } from "@/storage/profile";
 import { loadAutofillOnNavigation } from "@/storage/settings";
-import { detectAndFill, detectOnly } from "./fillExecutor";
+import { detectAndFill, detectOnly, getLastHandle, writeValueToField } from "./fillExecutor";
 import { canAutoFill, loadSession, recordFill, summarize } from "./fillSession";
+import { enrichWithAI } from "./aiEnrich";
+import { scrapeJobDescription } from "./jdScraper";
 
 chrome.runtime.onMessage.addListener(
   (message: ExtensionMessage, _sender, sendResponse: (r: ExtensionResponse) => void) => {
@@ -39,6 +41,9 @@ async function handle(message: ExtensionMessage): Promise<ExtensionResponse> {
       const session = summarize(await loadSession());
       return { ok: true, result, session };
     }
+    case "AI_DRAFT_FIELD": {
+      return draftField(message.fieldId);
+    }
     default:
       return { ok: false, error: `Unhandled message: ${(message as { type: string }).type}` };
   }
@@ -47,10 +52,41 @@ async function handle(message: ExtensionMessage): Promise<ExtensionResponse> {
 async function runFill(opts: { auto: boolean }) {
   const profile = await loadProfile();
   const result = await detectAndFill(profile);
+  // Classify leftover unknowns in one batched AI call (advisory badges only).
+  await enrichWithAI(result.matches);
   await recordFill(result.filledCount, { auto: opts.auto });
   // Report back to the background worker for history persistence.
   void chrome.runtime.sendMessage({ type: "FILL_DONE", result }).catch(() => {});
   return result;
+}
+
+/**
+ * AI draft for a free-text field (M5): the popup's "AI draft" button lands
+ * here. The question is the field's own label; the visible job description is
+ * scraped for context; the answer (cache-first, via the background worker) is
+ * written into the field for the user to review — never submitted.
+ */
+async function draftField(fieldId: string): Promise<ExtensionResponse> {
+  const handle = getLastHandle(fieldId);
+  if (!handle) return { ok: false, error: "Field not found — run Autofill first." };
+
+  const question = handle.discovered.label || handle.discovered.nearbyText || "";
+  if (!question.trim()) return { ok: false, error: "Field has no readable question text." };
+
+  const jdSummary = scrapeJobDescription();
+  const response = (await chrome.runtime.sendMessage({
+    type: "REQUEST_AI_ANSWER",
+    question,
+    jdSummary,
+  })) as { ok: boolean; answer?: { answer: string }; cached?: boolean; error?: string };
+
+  const text = response?.answer?.answer ?? "";
+  if (!response?.ok || !text.trim()) {
+    return { ok: false, error: response?.error ?? "No answer generated." };
+  }
+  const written = await writeValueToField(fieldId, text);
+  if (!written) return { ok: false, error: "Could not write to the field." };
+  return { ok: true, value: text, cached: response.cached };
 }
 
 // ---------------------------------------------------------------------------

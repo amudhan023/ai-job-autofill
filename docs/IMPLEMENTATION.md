@@ -92,6 +92,18 @@ email/phone — an empty references list means those fields stay blank.
 Auto-continue only ever operates inside a session the user started by
 clicking Autofill, is bounded, and inherits the zero-mutation guarantee.
 
+## Universality M5 (AI assist) — ✅ complete (2026-07-03)
+
+| Area | Status | Location |
+|---|---|---|
+| Batched unmatched-field classification (1 request/page, ≤15 fields, 2.5s budget) | ✅ | `extension/src/content/aiEnrich.ts`, `backend/app/api/ai.py` (`/ai/classify-batch`) |
+| Advisory-only AI: `aiCategory` annotates matches, never assigns values | ✅ | `shared/types.ts`, `aiEnrich.ts` |
+| Local answer cache (30-day TTL, 100 entries, normalized question keys) | ✅ | `extension/src/storage/answerCache.ts`, `background/index.ts` |
+| "AI draft" flow: popup button → JD scrape → cache-first answer → written for review | ✅ | `popup/Popup.tsx`, `content/index.ts`, `content/fillExecutor.ts` (`writeValueToField`) |
+
+Filling never depends on AI: enrichment is best-effort with a hard timeout,
+and a missing/unreachable backend degrades to the deterministic result.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

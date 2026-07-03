@@ -157,7 +157,10 @@ function FillSummary({ result }: { result: FillResult }) {
             <span className="truncate" title={m.reason}>
               {m.label || "(unlabeled)"}
             </span>
-            <ConfidenceBadge match={m} />
+            <span className="flex shrink-0 items-center gap-1">
+              {m.flags.includes("ai_generate") && <AiDraftButton fieldId={m.fieldId} />}
+              <ConfidenceBadge match={m} />
+            </span>
           </li>
         ))}
       </ul>
@@ -167,5 +170,36 @@ function FillSummary({ result }: { result: FillResult }) {
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * "AI draft" for free-text questions (M5): asks the content script to
+ * generate an answer (cache-first) and write it into the field. The value is
+ * only ever written into the form for review — never submitted.
+ */
+function AiDraftButton({ fieldId }: { fieldId: string }) {
+  const [state, setState] = useState<"idle" | "working" | "done" | "error">("idle");
+
+  const onDraft = async () => {
+    setState("working");
+    const res = await sendToActiveTab({ type: "AI_DRAFT_FIELD", fieldId });
+    setState(res && res.ok ? "done" : "error");
+  };
+
+  if (state === "done") return <span className="text-[11px] text-green-600">Drafted ✓</span>;
+  return (
+    <button
+      onClick={onDraft}
+      disabled={state === "working"}
+      title={state === "error" ? "Draft failed — is the AI backend configured in Options → Settings?" : "Generate a draft answer with AI"}
+      className={`rounded border px-1.5 py-0.5 text-[11px] ${
+        state === "error"
+          ? "border-red-300 text-red-600"
+          : "border-blue-300 text-blue-700 hover:bg-blue-50"
+      } disabled:opacity-50`}
+    >
+      {state === "working" ? "Drafting…" : state === "error" ? "Retry AI draft" : "AI draft"}
+    </button>
   );
 }

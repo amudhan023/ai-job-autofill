@@ -18,6 +18,28 @@ const AUTOFILL_FLOOR = 0.7;
 /** Default watch window for late/conditional fields after a fill pass (M2). */
 const DEFAULT_SETTLE_MS = 1200;
 
+/**
+ * Handles from the most recent fill pass, keyed by fieldId, so follow-up
+ * actions (AI drafts from the popup, M5) can target a specific control.
+ * Reset on every detectAndFill.
+ */
+const lastHandles = new Map<string, FieldHandle>();
+
+export function getLastHandle(fieldId: string): FieldHandle | undefined {
+  return lastHandles.get(fieldId);
+}
+
+/**
+ * Write a user-approved value (e.g. an AI draft) into a field from the last
+ * fill pass. Same writers, same zero-mutation guarantee; bypasses the
+ * never-clobber guard because the user explicitly asked for this write.
+ */
+export async function writeValueToField(fieldId: string, value: string): Promise<boolean> {
+  const handle = lastHandles.get(fieldId);
+  if (!handle || !value) return false;
+  return writeField(handle, value);
+}
+
 export interface FillOptions {
   /**
    * After a successful fill pass, keep watching the DOM this long for
@@ -46,9 +68,11 @@ export async function detectAndFill(
   const matches: FieldMatch[] = [];
   const seen = new Set<HTMLElement>();
   let filled = 0;
+  lastHandles.clear();
 
   for (const handle of handles) {
     seen.add(handle.element);
+    lastHandles.set(handle.discovered.fieldId, handle);
     const match = evaluateField(handle.discovered, profile);
     matches.push(match);
     if (shouldWrite(match) && (await tryWrite(handle, match))) filled++;
@@ -104,6 +128,7 @@ function fillLateFields(
       for (const handle of adapter.discoverFields()) {
         if (seen.has(handle.element)) continue;
         seen.add(handle.element);
+        lastHandles.set(handle.discovered.fieldId, handle);
         const match = evaluateField(handle.discovered, profile);
         matches.push(match);
         if (shouldWrite(match) && (await tryWrite(handle, match))) extra++;
@@ -150,18 +175,17 @@ function hasExistingValue(handle: FieldHandle): boolean {
 
 /** Skip-aware write: respects existing values, then dispatches by widget type. */
 async function tryWrite(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+  if (match.value === null) return false;
   if (hasExistingValue(handle)) {
     match.reason = "Already has a value — left untouched.";
     return false;
   }
-  return writeField(handle, match);
+  return writeField(handle, match.value);
 }
 
 /** Write a single resolved value to its control using type-appropriate logic. */
-async function writeField(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+async function writeField(handle: FieldHandle, value: string): Promise<boolean> {
   const { element, group } = handle;
-  const value = match.value;
-  if (value === null) return false;
 
   // tagName checks instead of instanceof: iframe-owned elements belong to a
   // different realm where instanceof against top-frame constructors fails.

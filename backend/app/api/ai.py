@@ -30,10 +30,30 @@ class ClassifyResponse(BaseModel):
     category: str
 
 
+class ClassifyBatchRequest(BaseModel):
+    questions: list[str]
+
+
+class ClassifyBatchResponse(BaseModel):
+    categories: list[str]
+
+
 @router.post("/classify", response_model=ClassifyResponse)
 async def classify(req: ClassifyRequest) -> ClassifyResponse:
     # Keyword classifier always available; LLM refines when configured.
     return ClassifyResponse(category=classify_question(req.question, get_llm()))
+
+
+@router.post("/classify-batch", response_model=ClassifyBatchResponse)
+async def classify_batch(req: ClassifyBatchRequest) -> ClassifyBatchResponse:
+    """Classify a page's worth of unmatched fields in one request (M5).
+
+    The extension batches every unknown field of a fill pass here instead of
+    issuing one call per field. Capped to keep a single request bounded.
+    """
+    llm = get_llm()
+    questions = req.questions[:25]
+    return ClassifyBatchResponse(categories=[classify_question(q, llm) for q in questions])
 
 
 @router.post("/jd", response_model=JDExtract)

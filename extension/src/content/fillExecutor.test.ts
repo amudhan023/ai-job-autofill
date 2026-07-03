@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { emptyProfile } from "@/shared/profile";
-import { detectAndFill, detectOnly } from "./fillExecutor";
+import { detectAndFill, detectOnly, writeValueToField } from "./fillExecutor";
 
 /** Tests disable the settle window unless they exercise it explicitly. */
 const NO_SETTLE = { settleMs: 0 };
@@ -227,5 +227,31 @@ describe("detectAndFill — M4 never-clobber guard", () => {
     expect(first.filledCount).toBeGreaterThan(0);
     expect(second.filledCount).toBe(0);
     expect((document.getElementById("fn") as HTMLInputElement).value).toBe("Amudhan");
+  });
+});
+
+describe("writeValueToField — M5 AI draft target", () => {
+  it("writes a user-approved draft into a field from the last pass", async () => {
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" />
+        <label for="cl">Cover Letter</label><textarea id="cl"></textarea>
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    const coverLetter = result.matches.find((m) => m.label === "Cover Letter")!;
+    expect(coverLetter.flags).toContain("ai_generate");
+    expect((document.getElementById("cl") as HTMLTextAreaElement).value).toBe("");
+
+    const ok = await writeValueToField(coverLetter.fieldId, "Dear team, …");
+    expect(ok).toBe(true);
+    expect((document.getElementById("cl") as HTMLTextAreaElement).value).toBe("Dear team, …");
+  });
+
+  it("refuses unknown field ids and empty values", async () => {
+    expect(await writeValueToField("nope", "text")).toBe(false);
+    expect(await writeValueToField("field_0", "")).toBe(false);
   });
 });

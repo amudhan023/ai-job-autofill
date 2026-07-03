@@ -69,6 +69,11 @@ export interface FieldMatch {
   flags: RuleFlag[];
   /** Why this decision was made — surfaced on badge hover. */
   reason: string;
+  /**
+   * AI-suggested category for fields no deterministic rule matched (M5).
+   * Advisory only — never triggers a write.
+   */
+  aiCategory?: string;
 }
 
 /** Result of attempting to fill the current page. */
@@ -100,7 +105,9 @@ export type ExtensionMessage =
   | { type: "DETECT_ATS" }
   | { type: "FILL_FORM" }
   | { type: "GET_PAGE_STATUS" }
-  | { type: "PROFILE_UPDATED"; profile: UserProfile };
+  | { type: "PROFILE_UPDATED"; profile: UserProfile }
+  /** Generate an AI draft for a free-text field from the last fill (M5). */
+  | { type: "AI_DRAFT_FIELD"; fieldId: string };
 
 /** Multi-page fill-session progress shown in the popup (M4). */
 export interface SessionSummary {
@@ -111,4 +118,5 @@ export interface SessionSummary {
 export type ExtensionResponse =
   | { ok: true; platform: ATSPlatform; session?: SessionSummary }
   | { ok: true; result: FillResult; session?: SessionSummary }
+  | { ok: true; value: string; cached?: boolean }
   | { ok: false; error: string };

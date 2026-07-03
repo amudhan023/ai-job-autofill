@@ -285,4 +285,12 @@ service. They work; they get extended, not replaced.
   (URL polling + popstate/hashchange — content scripts can't hook page-world
   pushState); session progress in the popup; settings toggle for
   auto-continue.
-- [ ] M5 – M6 — not started.
+- [x] **M5** — landed: one-request batched classification of unmatched
+  fields (`content/aiEnrich.ts` → background → `/ai/classify-batch`;
+  advisory `aiCategory` badges only, no values, so AI can never write);
+  30-day local answer cache keyed on normalized question text
+  (`storage/answerCache.ts`, consulted by the background worker before any
+  network call); popup "AI draft" button for `ai_generate` fields — content
+  script scrapes the JD, generates cache-first, writes the draft into the
+  field for review (`AI_DRAFT_FIELD`).
+- [ ] M6 — not started.

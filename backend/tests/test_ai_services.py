@@ -122,3 +122,37 @@ def test_generate_stubbed_without_llm() -> None:
     res = generate(AnswerRequest(question="Why do you want to join us?"), llm=None)
     assert res.stubbed is True
     assert res.answer == ""
+
+
+def test_classify_batch_endpoint() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    res = client.post(
+        "/ai/classify-batch",
+        json={
+            "questions": [
+                "Are you authorized to work in the US?",
+                "Why do you want to join us?",
+                "What is your expected salary?",
+            ]
+        },
+    )
+    assert res.status_code == 200
+    cats = res.json()["categories"]
+    assert cats[0] == "VISA_WORK_AUTH"
+    assert cats[1] == "MOTIVATION"
+    assert cats[2] == "SALARY"
+
+
+def test_classify_batch_caps_input() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    client = TestClient(app)
+    res = client.post("/ai/classify-batch", json={"questions": ["salary?"] * 100})
+    assert res.status_code == 200
+    assert len(res.json()["categories"]) == 25

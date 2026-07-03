@@ -88,6 +88,11 @@ export class BackendClient {
     return this.post("/ai/classify", { question });
   }
 
+  /** One request for a whole page's unmatched fields (M5). */
+  classifyBatch(questions: string[]): Promise<{ categories: string[] }> {
+    return this.post("/ai/classify-batch", { questions });
+  }
+
   extractJD(jdText: string): Promise<JDExtract> {
     return this.post("/ai/jd", { jd_text: jdText });
   }
