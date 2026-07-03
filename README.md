@@ -60,13 +60,28 @@ uvicorn app.main:app --reload
 
 ## Status
 
-Phases 1–5 are implemented (rule engine, 7 ATS adapters, AI answers, cover
-letters, analytics, orchestration), plus **Universality M1**: a universal form
-engine that works on *any* site with a form — multi-signal semantic field
-matching (autocomplete / label / aria / placeholder / name / id / nearby text),
-a generic adapter fallback when no ATS is recognized, and on-demand injection
-via `activeTab` (no `<all_urls>` permission). Architecture review, gap
-analysis, and the M2–M6 roadmap:
+Phases 1–5 (rule engine, ATS adapters, AI answers, cover letters, analytics,
+orchestration) and the **universality initiative M1–M6** are implemented. The
+extension now works on *any* site with a form:
+
+- **M1 — universal core:** multi-signal semantic matching (autocomplete /
+  label / aria / placeholder / name / id / nearby text), generic fallback
+  when no ATS is recognized, on-demand injection via `activeTab` (no
+  `<all_urls>` permission).
+- **M2 — deep reach:** open shadow roots, same-origin iframes, ARIA
+  comboboxes, contenteditable editors, post-fill watch for conditional
+  fields.
+- **M3 — profile depth:** address, middle/preferred name, clearance,
+  references; stored profiles migrate automatically.
+- **M4 — multi-page:** bounded fill sessions continue across wizard steps
+  and SPA navigations; existing values are never overwritten.
+- **M5 — AI assist:** batched classification of unknown fields (advisory
+  only), local answer cache, one-click AI drafts for free-text questions.
+- **M6 — files & data-driven platforms:** resume auto-attach to upload
+  fields; ATS adapters are data entries (`PLATFORM_HINTS`), extendable via
+  remote config without a release.
+
+Architecture review, gap analysis, and design decisions:
 [`docs/ARCHITECTURE_REVIEW.md`](./docs/ARCHITECTURE_REVIEW.md). Progress log:
 [`docs/IMPLEMENTATION.md`](./docs/IMPLEMENTATION.md).
 

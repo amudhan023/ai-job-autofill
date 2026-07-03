@@ -47,17 +47,26 @@ Chrome Extension (MV3)                         Optional Backend (FastAPI)
 ```
 
 ### What happens when you click "Autofill"
-1. The **content script** already running on the page detects which ATS it is
-   (Greenhouse, Lever, Ashby, Workday, iCIMS, SmartRecruiters, BambooHR) using a
-   scored fingerprint of the URL + DOM.
-2. It discovers the form's fields and matches each one against the **rule
-   engine** (label/placeholder patterns → your profile values).
-3. Each field gets a **confidence score**. Fields at/above the threshold with a
-   real profile value are filled; sensitive ones (SSN, EIN, diversity) are
-   always skipped; free-text ones are flagged for optional AI.
-4. Values are written using a React-safe setter so controlled inputs (Workday,
-   Ashby) register the change.
-5. The popup shows a per-field summary; the result is saved to your local
+1. The **content script** (pre-loaded on known ATS hosts, injected on demand
+   anywhere else) detects which ATS it is — Greenhouse, Lever, Ashby, Workday,
+   iCIMS, SmartRecruiters, BambooHR — using a scored fingerprint of the
+   URL + DOM. **Any other site with a form uses the universal engine.**
+2. It discovers the form's fields — including inside open shadow DOM and
+   same-origin iframes — and matches each one against the **rule engine**
+   using every available signal (autocomplete attribute, label, aria,
+   placeholder, name/id, nearby text), taking the strongest match.
+3. Each field gets a **confidence score**. Fields at/above the threshold with
+   a real profile value are filled; fields that already hold a value are left
+   untouched; sensitive ones (SSN, DOB, diversity, …) are always skipped;
+   free-text ones are flagged for optional AI drafting.
+4. Values are written using a React-safe setter so controlled inputs
+   (Workday, Ashby) register the change; comboboxes are typed-and-picked,
+   and your stored resume is attached to Resume/CV upload fields.
+5. The extension briefly watches for conditional fields that appear in
+   response to its own answers and fills those too, then keeps the session
+   going across wizard pages until you finish (bounded; off-switch in
+   Settings).
+6. The popup shows a per-field summary; the result is saved to your local
    history (used by the dashboard).
 
 For the full architecture, see [`PLAN.md`](../PLAN.md) and
@@ -178,8 +187,11 @@ device.
 ## 7. Using the autofill feature
 
 ### Supported job platforms
-Greenhouse, Lever, Ashby, Workday, iCIMS, SmartRecruiters, BambooHR. On any other
-site the extension does nothing.
+Recognized ATSs (highest accuracy): Greenhouse, Lever, Ashby, Workday, iCIMS,
+SmartRecruiters, BambooHR. **Any other career portal works too** via the
+universal engine — on non-whitelisted sites, clicking Autofill in the popup
+injects the engine into the page for that click only (`activeTab`), so no
+code runs anywhere until you ask.
 
 ### Fill an application
 1. Open a job posting's **application form** on a supported platform.
@@ -211,8 +223,13 @@ Hover any badge to see *why* (the reason and the confidence percentage).
   these yourself.
 - **Salary / notice period** — matched but left for you to confirm (they're
   flagged, not auto-written), since these are situational.
-- **Cover letters and free-text** — detected and flagged; filled only if you've
-  enabled the optional AI backend (see below).
+- **Cover letters and free-text** — detected and flagged; use the **AI draft**
+  button next to the field in the popup to generate an answer (requires the
+  optional AI backend, see below). Drafts are written into the form for your
+  review — never submitted. Answers are cached locally, so repeat questions
+  across applications are instant and free.
+- **Fields that already have a value** — anything you typed (or a previous
+  page filled) is never overwritten.
 
 ### Review and submit
 1. **Always review the filled form** before submitting. The extension never
