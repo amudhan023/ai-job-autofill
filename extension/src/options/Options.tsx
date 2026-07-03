@@ -3,7 +3,12 @@ import { useProfileStore } from "@/storage/store";
 import type { Experience, Education, Reference, VisaType } from "@/shared/profile";
 import { CheckField, Section, SelectField, TextField } from "./Field";
 import { Dashboard } from "./Dashboard";
-import { loadBackendUrl, saveBackendUrl } from "@/storage/settings";
+import {
+  loadAutofillOnNavigation,
+  loadBackendUrl,
+  saveAutofillOnNavigation,
+  saveBackendUrl,
+} from "@/storage/settings";
 import { BackendClient } from "@/api/client";
 
 type Tab = "profile" | "applications" | "settings";
@@ -429,14 +434,17 @@ function EducationEntry({ edu, index, onUpdate, onRemove }: EducationEntryProps)
 
 function SettingsPanel() {
   const [url, setUrl] = useState("");
+  const [autofillOnNav, setAutofillOnNav] = useState(true);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     void loadBackendUrl().then(setUrl);
+    void loadAutofillOnNavigation().then(setAutofillOnNav);
   }, []);
 
   const onSave = async () => {
     await saveBackendUrl(url.trim());
+    await saveAutofillOnNavigation(autofillOnNav);
     setSaved(true);
   };
 
@@ -451,6 +459,13 @@ function SettingsPanel() {
         <code className="ml-1 rounded bg-gray-100 px-1">backend/.env</code> for AI-powered parsing.
       </p>
       <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="http://localhost:8000" />
+      <div className="mt-4">
+        <CheckField
+          label="Continue filling automatically across pages of the same application (multi-step wizards)"
+          checked={autofillOnNav}
+          onChange={setAutofillOnNav}
+        />
+      </div>
       <div className="mt-4 flex items-center gap-3">
         <button onClick={onSave} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">
           Save settings

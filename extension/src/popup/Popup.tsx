@@ -4,6 +4,7 @@ import type {
   ExtensionResponse,
   FieldMatch,
   FillResult,
+  SessionSummary,
 } from "@/shared/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
@@ -50,12 +51,15 @@ type PageState = ATSPlatform | "loading" | "unscanned";
 export function Popup() {
   const [platform, setPlatform] = useState<PageState>("loading");
   const [result, setResult] = useState<FillResult | null>(null);
+  const [session, setSession] = useState<SessionSummary | undefined>(undefined);
   const [filling, setFilling] = useState(false);
 
   useEffect(() => {
     void sendToActiveTab({ type: "GET_PAGE_STATUS" }).then((res) => {
-      if (res && res.ok && "platform" in res) setPlatform(res.platform);
-      else setPlatform("unscanned");
+      if (res && res.ok && "platform" in res) {
+        setPlatform(res.platform);
+        setSession(res.session);
+      } else setPlatform("unscanned");
     });
   }, []);
 
@@ -68,6 +72,7 @@ export function Popup() {
     if (res && res.ok && "result" in res) {
       setResult(res.result);
       setPlatform(res.result.platform);
+      setSession(res.session);
     }
     setFilling(false);
   };
@@ -99,6 +104,13 @@ export function Popup() {
       <p className="mt-2 text-[11px] text-gray-500">
         We only fill fields — never submit. Review everything before you apply.
       </p>
+
+      {session && session.pages > 0 && (
+        <p className="mt-2 rounded bg-blue-50 px-2 py-1 text-[11px] text-blue-700">
+          This application: {session.fieldsFilled} field(s) across {session.pages} page(s).
+          Continues automatically as you advance.
+        </p>
+      )}
 
       {result && <FillSummary result={result} />}
     </div>

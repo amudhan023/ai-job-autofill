@@ -172,3 +172,60 @@ describe("detectAndFill — M2 deep reach", () => {
     expect(result.matches.some((m) => m.label === "Email")).toBe(true);
   });
 });
+
+describe("detectAndFill — M4 never-clobber guard", () => {
+  it("leaves user-typed values untouched and reports why", async () => {
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" value="Alexandra" />
+        <label for="em">Email</label><input id="em" type="email" />
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.email = "a@example.com";
+
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    expect((document.getElementById("fn") as HTMLInputElement).value).toBe("Alexandra");
+    expect((document.getElementById("em") as HTMLInputElement).value).toBe("a@example.com");
+    const fnMatch = result.matches.find((m) => m.label === "First Name")!;
+    expect(fnMatch.reason).toMatch(/already has a value/i);
+    expect(result.filledCount).toBe(1); // only the email was written
+  });
+
+  it("does not re-check a radio group where an option is already selected", async () => {
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" />
+        <fieldset>
+          <legend>Are you legally authorized to work in the US?</legend>
+          <label><input type="radio" name="auth" value="yes" />Yes</label>
+          <label><input type="radio" name="auth" value="no" checked />No</label>
+        </fieldset>
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.workAuth.usAuthorized = true; // would write "Yes", but "No" is user-chosen
+
+    await detectAndFill(p, NO_SETTLE);
+
+    const no = document.querySelector<HTMLInputElement>('input[value="no"]')!;
+    const yes = document.querySelector<HTMLInputElement>('input[value="yes"]')!;
+    expect(no.checked).toBe(true);
+    expect(yes.checked).toBe(false);
+  });
+
+  it("re-running a fill is idempotent (second pass writes nothing)", async () => {
+    greenhouseForm();
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.email = "a@example.com";
+
+    const first = await detectAndFill(p, NO_SETTLE);
+    const second = await detectAndFill(p, NO_SETTLE);
+
+    expect(first.filledCount).toBeGreaterThan(0);
+    expect(second.filledCount).toBe(0);
+    expect((document.getElementById("fn") as HTMLInputElement).value).toBe("Amudhan");
+  });
+});

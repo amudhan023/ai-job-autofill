@@ -275,4 +275,14 @@ service. They work; they get extended, not replaced.
   fields that beat the generic email/phone rules; options-UI editors
   (address, visa/clearance selects, references list); backend Pydantic
   mirror updated.
-- [ ] M4 – M6 — not started.
+- [x] **M4** — landed: fill-session state in `content/fillSession.ts`
+  (chrome.storage.session, scoped to origin + first path segment so
+  multi-tenant ATS hosts don't leak sessions across companies; 30-min
+  expiry, ≤10 automatic passes); never-clobber guard in
+  `content/fillExecutor.ts` (existing values — user-typed or filled on an
+  earlier page — are never overwritten, making re-runs idempotent); SPA
+  navigation watcher + full-page-load resume in `content/index.ts`
+  (URL polling + popstate/hashchange — content scripts can't hook page-world
+  pushState); session progress in the popup; settings toggle for
+  auto-continue.
+- [ ] M5 – M6 — not started.

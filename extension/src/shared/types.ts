@@ -102,7 +102,13 @@ export type ExtensionMessage =
   | { type: "GET_PAGE_STATUS" }
   | { type: "PROFILE_UPDATED"; profile: UserProfile };
 
+/** Multi-page fill-session progress shown in the popup (M4). */
+export interface SessionSummary {
+  pages: number;
+  fieldsFilled: number;
+}
+
 export type ExtensionResponse =
-  | { ok: true; platform: ATSPlatform }
-  | { ok: true; result: FillResult }
+  | { ok: true; platform: ATSPlatform; session?: SessionSummary }
+  | { ok: true; result: FillResult; session?: SessionSummary }
   | { ok: false; error: string };

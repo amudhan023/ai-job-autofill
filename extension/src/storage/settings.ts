@@ -19,3 +19,19 @@ export async function loadBackendUrl(): Promise<string> {
 export async function saveBackendUrl(url: string): Promise<void> {
   await chrome.storage.local.set({ [BACKEND_URL_KEY]: url });
 }
+
+const AUTOFILL_ON_NAV_KEY = "autofillOnNavigation";
+
+/**
+ * Whether a fill session continues automatically across page/SPA navigations
+ * (multi-step wizards). Default on; the session is bounded (see fillSession).
+ */
+export async function loadAutofillOnNavigation(): Promise<boolean> {
+  const stored = await chrome.storage.local.get(AUTOFILL_ON_NAV_KEY);
+  const v = stored[AUTOFILL_ON_NAV_KEY] as boolean | undefined;
+  return v ?? true;
+}
+
+export async function saveAutofillOnNavigation(enabled: boolean): Promise<void> {
+  await chrome.storage.local.set({ [AUTOFILL_ON_NAV_KEY]: enabled });
+}

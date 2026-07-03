@@ -26,6 +26,16 @@ chrome.runtime.onInstalled.addListener(() => {
   console.info("[AI Job Autofill] installed");
 });
 
+// Let content scripts read/write chrome.storage.session (fill-session state,
+// M4). Session storage is trusted-contexts-only by default.
+try {
+  void chrome.storage.session?.setAccessLevel?.({
+    accessLevel: "TRUSTED_AND_UNTRUSTED_CONTEXTS",
+  });
+} catch {
+  // Older Chrome — fillSession falls back to storage.local.
+}
+
 // Keyboard shortcut → tell the active tab to fill.
 chrome.commands?.onCommand.addListener(async (command) => {
   if (command !== "autofill") return;

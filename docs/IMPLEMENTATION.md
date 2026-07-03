@@ -79,6 +79,19 @@ are unreachable by design.
 Reference contact rules intentionally never fall back to the candidate's own
 email/phone — an empty references list means those fields stay blank.
 
+## Universality M4 (multi-page applications) — ✅ complete (2026-07-02)
+
+| Area | Status | Location |
+|---|---|---|
+| Fill-session state (storage.session; origin+path scope; 30-min/10-pass bounds) | ✅ | `extension/src/content/fillSession.ts` |
+| Never-clobber guard: existing values untouched; fills idempotent | ✅ | `extension/src/content/fillExecutor.ts` |
+| SPA navigation watcher + page-load session resume | ✅ | `extension/src/content/index.ts` |
+| Session progress in popup; auto-continue settings toggle | ✅ | `popup/Popup.tsx`, `options/Options.tsx`, `storage/settings.ts` |
+| storage.session access for content scripts | ✅ | `extension/src/background/index.ts` |
+
+Auto-continue only ever operates inside a session the user started by
+clicking Autofill, is bounded, and inherits the zero-mutation guarantee.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

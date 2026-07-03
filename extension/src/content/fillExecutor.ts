@@ -51,7 +51,7 @@ export async function detectAndFill(
     seen.add(handle.element);
     const match = evaluateField(handle.discovered, profile);
     matches.push(match);
-    if (shouldWrite(match) && (await writeField(handle, match))) filled++;
+    if (shouldWrite(match) && (await tryWrite(handle, match))) filled++;
   }
 
   // Post-fill settle window: only worth watching when we actually wrote
@@ -106,7 +106,7 @@ function fillLateFields(
         seen.add(handle.element);
         const match = evaluateField(handle.discovered, profile);
         matches.push(match);
-        if (shouldWrite(match) && (await writeField(handle, match))) extra++;
+        if (shouldWrite(match) && (await tryWrite(handle, match))) extra++;
       }
       scanning = false;
     };
@@ -126,6 +126,35 @@ function fillLateFields(
       resolve(extra);
     }, settleMs);
   });
+}
+
+/**
+ * NEVER-CLOBBER GUARD (M4): a control that already holds a value — typed by
+ * the user, restored by the browser, or filled on an earlier pass/page of a
+ * multi-step application — is left untouched.
+ */
+function hasExistingValue(handle: FieldHandle): boolean {
+  const { element, group } = handle;
+  if (group) return group.some((input) => input.checked);
+  const tag = element.tagName;
+  if (tag === "SELECT") {
+    // Index 0 is the default/placeholder option; anything beyond it is a choice.
+    return (element as HTMLSelectElement).selectedIndex > 0;
+  }
+  if (tag === "INPUT" || tag === "TEXTAREA") {
+    return (element as HTMLInputElement).value.trim().length > 0;
+  }
+  // Custom text widgets (contenteditable / role=textbox).
+  return (element.textContent ?? "").trim().length > 0;
+}
+
+/** Skip-aware write: respects existing values, then dispatches by widget type. */
+async function tryWrite(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+  if (hasExistingValue(handle)) {
+    match.reason = "Already has a value — left untouched.";
+    return false;
+  }
+  return writeField(handle, match);
 }
 
 /** Write a single resolved value to its control using type-appropriate logic. */
