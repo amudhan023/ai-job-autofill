@@ -161,7 +161,8 @@ function nearbyText(el: HTMLElement): string {
 
 function isFillable(el: HTMLElement): boolean {
   if (isTag(el, "INPUT")) {
-    const hidden = ["hidden", "submit", "button", "reset", "image", "file"];
+    // File inputs are discoverable since M6 (resume attachment).
+    const hidden = ["hidden", "submit", "button", "reset", "image"];
     if (hidden.includes((el as HTMLInputElement).type)) return false;
   }
   if ((el as HTMLInputElement).disabled) return false;
@@ -171,7 +172,11 @@ function isFillable(el: HTMLElement): boolean {
   // Use the element's own window — computed styles are per-document (iframes).
   const win = el.ownerDocument?.defaultView ?? window;
   const style = win.getComputedStyle(el);
-  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (style.display === "none" || style.visibility === "hidden") {
+    // Exception: file inputs are routinely visually hidden behind styled
+    // dropzones/buttons but still writable — keep them.
+    return isTag(el, "INPUT") && (el as HTMLInputElement).type === "file";
+  }
   return true;
 }
 

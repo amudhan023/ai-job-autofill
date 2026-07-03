@@ -7,10 +7,12 @@ import {
   isComboboxInput,
   setComboboxValue,
   setContentEditableValue,
+  setFileValue,
   setInputValue,
   setRadioOrCheckbox,
   setSelectValue,
 } from "@/adapters/domFill";
+import { loadResumeFile } from "@/storage/resumeFile";
 
 /** Confidence floor below which we never auto-write (just badge it). */
 const AUTOFILL_FLOOR = 0.7;
@@ -180,6 +182,18 @@ async function tryWrite(handle: FieldHandle, match: FieldMatch): Promise<boolean
     match.reason = "Already has a value — left untouched.";
     return false;
   }
+  // Resume attachment (M6): the match value is only the stored file NAME;
+  // the actual bytes come from local resume storage.
+  if (match.ruleId === "resumeUpload" && handle.discovered.type === "file") {
+    const file = await loadResumeFile();
+    if (!file) {
+      match.reason = "Resume field found — upload your resume in Options to auto-attach.";
+      return false;
+    }
+    const ok = setFileValue(handle.element as HTMLInputElement, file);
+    match.reason = ok ? `Attached ${file.name}.` : "Could not attach the resume file.";
+    return ok;
+  }
   return writeField(handle, match.value);
 }
 
@@ -192,6 +206,9 @@ async function writeField(handle: FieldHandle, value: string): Promise<boolean> 
   const tag = element.tagName;
   const inputType = (element as HTMLInputElement).type;
 
+  if (tag === "INPUT" && inputType === "file") {
+    return false; // file inputs only accept File objects (see tryWrite)
+  }
   if (tag === "INPUT" && (inputType === "radio" || inputType === "checkbox")) {
     return group ? setRadioOrCheckbox(group, value) : false;
   }

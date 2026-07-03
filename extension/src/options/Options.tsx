@@ -10,6 +10,7 @@ import {
   saveBackendUrl,
 } from "@/storage/settings";
 import { BackendClient } from "@/api/client";
+import { saveResumeFile } from "@/storage/resumeFile";
 
 type Tab = "profile" | "applications" | "settings";
 
@@ -297,6 +298,9 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
     if (!file) return;
     setStatus("parsing");
     setErrorMsg("");
+    // Store the file bytes locally regardless of parse outcome so the
+    // content script can attach it to resume-upload fields (M6).
+    void saveResumeFile(file);
     const url = backendUrl ?? "http://localhost:8000";
     try {
       const client = new BackendClient(url.replace(/\/$/, ""));

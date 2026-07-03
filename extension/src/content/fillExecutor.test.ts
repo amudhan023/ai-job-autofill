@@ -255,3 +255,55 @@ describe("writeValueToField — M5 AI draft target", () => {
     expect(await writeValueToField("field_0", "")).toBe(false);
   });
 });
+
+describe("detectAndFill — M6 resume attachment", () => {
+  it("attaches the stored resume to a Resume/CV file input", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+    const { saveResumeFile } = await import("@/storage/resumeFile");
+    await saveResumeFile(new File(["fake pdf bytes"], "resume.pdf", { type: "application/pdf" }));
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" />
+        <label for="res">Resume/CV</label><input id="res" type="file" />
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.meta.resumeFileName = "resume.pdf";
+
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    const resMatch = result.matches.find((m) => m.label === "Resume/CV")!;
+    expect(resMatch.ruleId).toBe("resumeUpload");
+    const input = document.getElementById("res") as HTMLInputElement;
+    if (typeof DataTransfer !== "undefined") {
+      expect(input.files?.length).toBe(1);
+      expect(input.files?.[0].name).toBe("resume.pdf");
+      expect(resMatch.reason).toMatch(/attached resume\.pdf/i);
+    } else {
+      // jsdom has no DataTransfer — the writer must fail cleanly, not throw.
+      expect(resMatch.reason).toMatch(/could not attach/i);
+    }
+  });
+
+  it("reports guidance when no resume is stored (never invents a file)", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" />
+        <label for="res">Resume</label><input id="res" type="file" />
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.meta.resumeFileName = "resume.pdf"; // name known, bytes never uploaded
+
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    const resMatch = result.matches.find((m) => m.label === "Resume")!;
+    expect((document.getElementById("res") as HTMLInputElement).files?.length ?? 0).toBe(0);
+    expect(resMatch.reason).toMatch(/upload your resume in options/i);
+  });
+});

@@ -51,6 +51,8 @@ export function inferType(el: HTMLElement): FieldType {
   }
   if (el.tagName === "INPUT") {
     switch ((el as HTMLInputElement).type) {
+      case "file":
+        return "file";
       case "email":
         return "email";
       case "tel":

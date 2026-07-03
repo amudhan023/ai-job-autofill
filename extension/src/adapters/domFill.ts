@@ -141,6 +141,25 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * File-input writer (M6): attach a File via DataTransfer (the only way to
+ * set `input.files` programmatically) and fire the events dropzone wrappers
+ * (react-dropzone, FilePond) listen for. Attaching a file is a value write;
+ * the zero-mutation guarantee (never submit) is unaffected.
+ */
+export function setFileValue(input: HTMLInputElement, file: File): boolean {
+  try {
+    const win = (input.ownerDocument?.defaultView ?? window) as typeof window;
+    const dt = new win.DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+  } catch {
+    return false; // environment without DataTransfer — report unfilled
+  }
+  dispatchInputAndChange(input);
+  return true;
+}
+
 export function setRadioOrCheckbox(
   group: HTMLInputElement[],
   desiredLabel: string,

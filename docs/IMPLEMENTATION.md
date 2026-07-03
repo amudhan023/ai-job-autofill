@@ -104,6 +104,20 @@ clicking Autofill, is bounded, and inherits the zero-mutation guarantee.
 Filling never depends on AI: enrichment is best-effort with a hard timeout,
 and a missing/unreachable backend degrades to the deterministic result.
 
+## Universality M6 (files & platform hints) — ✅ complete (2026-07-03)
+
+| Area | Status | Location |
+|---|---|---|
+| Adapter classes → data-driven PLATFORM_HINTS + one HintedAdapter | ✅ | `extension/src/adapters/platforms.ts`, `registry.ts` (7 class files deleted) |
+| Remote config hot-extends detection fingerprints (additive only) | ✅ | `platforms.ts` (`applyRemoteHints`), wired in `content/index.ts` |
+| Resume bytes stored locally (5MB cap, base64 in storage.local) | ✅ | `extension/src/storage/resumeFile.ts`, saved on upload in `options/Options.tsx` |
+| Resume attached to Resume/CV file inputs (DataTransfer + input/change for dropzones) | ✅ | `adapters/domFill.ts` (`setFileValue`), `content/fillExecutor.ts` |
+| File inputs discoverable (incl. visually hidden behind styled dropzones) | ✅ | `adapters/discover.ts`, `types.ts` (`file` FieldType) |
+| Synthetic framework corpus (MUI/Angular/placeholder/autocomplete/shadow) | ✅ | `extension/src/content/corpus.test.ts` |
+
+Adding a new ATS platform is now a `PLATFORM_HINTS` data entry (or a remote
+config push for detection tweaks) — no new code. This completes M1–M6.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

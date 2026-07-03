@@ -293,4 +293,14 @@ service. They work; they get extended, not replaced.
   network call); popup "AI draft" button for `ai_generate` fields — content
   script scrapes the JD, generates cache-first, writes the draft into the
   field for review (`AI_DRAFT_FIELD`).
-- [ ] M6 — not started.
+- [x] **M6** — landed: seven adapter classes folded into data-driven
+  `PLATFORM_HINTS` + one `HintedAdapter` (`adapters/platforms.ts`; remote
+  config now hot-extends detection fingerprints via `applyRemoteHints`);
+  resume file bytes stored locally (`storage/resumeFile.ts`, 5MB cap) and
+  attached to Resume/CV file inputs via DataTransfer with dropzone events
+  (`domFill.setFileValue`; visually-hidden file inputs behind styled
+  dropzones stay discoverable); synthetic framework corpus tests
+  (`content/corpus.test.ts`: MUI, Angular, placeholder-only,
+  autocomplete-only, web-component/shadow, nearby-text-only fixtures).
+
+All six milestones of the universality initiative are complete.

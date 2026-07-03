@@ -27,7 +27,8 @@ export type FieldType =
   | "select"
   | "radio"
   | "checkbox"
-  | "textarea";
+  | "textarea"
+  | "file";
 
 /** Behavioral flags on a rule (confirm before fill, AI-generate, etc.). */
 export type RuleFlag = "confirm" | "ai_generate" | "blocklist";

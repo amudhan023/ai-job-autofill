@@ -21,7 +21,7 @@ describe("discoverWithin", () => {
     expect(handles).toHaveLength(4);
   });
 
-  it("excludes hidden, submit, and file inputs", () => {
+  it("excludes hidden and submit inputs; includes file inputs (M6)", () => {
     document.body.innerHTML = `
       <form>
         <input type="hidden" name="csrf" />
@@ -30,8 +30,10 @@ describe("discoverWithin", () => {
         <input type="text" aria-label="Visible" />
       </form>`;
     const handles = discoverWithin(document.querySelector("form")!);
-    expect(handles).toHaveLength(1);
-    expect(handles[0].discovered.ariaLabel).toBe("Visible");
+    expect(handles).toHaveLength(2);
+    const types = handles.map((h) => h.discovered.type);
+    expect(types).toContain("file"); // file inputs discoverable since M6
+    expect(types).toContain("text");
   });
 
   it("excludes disabled controls", () => {

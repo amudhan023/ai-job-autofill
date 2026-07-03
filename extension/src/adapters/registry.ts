@@ -1,26 +1,12 @@
 import type { ATSAdapter } from "./types";
 import type { ATSPlatform } from "@/shared/types";
-import { GreenhouseAdapter } from "./greenhouse";
-import { LeverAdapter } from "./lever";
-import { AshbyAdapter } from "./ashby";
-import { WorkdayAdapter } from "./workday";
-import { IcimsAdapter } from "./icims";
-import { SmartRecruitersAdapter } from "./smartrecruiters";
-import { BambooHrAdapter } from "./bamboohr";
+import { HintedAdapter, PLATFORM_HINTS } from "./platforms";
 import { GenericAdapter } from "./generic";
 
 /** Detection threshold per the plan: 70+ triggers adapter load. */
 export const DETECTION_THRESHOLD = 70;
 
-const ADAPTERS: ATSAdapter[] = [
-  new GreenhouseAdapter(),
-  new LeverAdapter(),
-  new AshbyAdapter(),
-  new WorkdayAdapter(),
-  new IcimsAdapter(),
-  new SmartRecruitersAdapter(),
-  new BambooHrAdapter(),
-];
+const ADAPTERS: ATSAdapter[] = PLATFORM_HINTS.map((hint) => new HintedAdapter(hint));
 
 export interface DetectionOutcome {
   platform: ATSPlatform;

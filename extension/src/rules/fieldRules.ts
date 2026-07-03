@@ -99,6 +99,14 @@ export const FIELD_RULES: FieldRule[] = [
   // Consent checkbox ("agree to be contacted for opportunities") — always checked.
   { id: "consentContact", patterns: [/do you agree.*contact|allow.*contact.*opportunit|consent.*contact|^i agree$/i, /contact.*job.*opportunit.*years/i], profile: "preferences.consentToContact", type: "checkbox", transform: boolToYesNo },
 
+  // --- File uploads (M6) ---
+  // Resume/CV upload: the stored resume file is attached by fillExecutor.
+  // `profile` points at the stored file name so the no-value ⇒ no-fill
+  // invariant holds when no resume has been uploaded to the extension.
+  // coverLetter (below, textarea-typed) also catches "Cover Letter" file
+  // inputs; the executor only attaches the resume to resumeUpload matches.
+  { id: "resumeUpload", patterns: [/resume|\bcv\b|curriculum.?vitae/i], profile: "meta.resumeFileName", type: "file" },
+
   // --- Free-text → AI; detected and flagged, not deterministically filled. ---
   { id: "coverLetter", patterns: [/cover.?letter/i], profile: null, type: "textarea", flags: ["ai_generate"] },
   { id: "whyCompany", patterns: [/why.*(company|us|role|join)|motivation/i], profile: null, type: "textarea", flags: ["ai_generate"] },

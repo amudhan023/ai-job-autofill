@@ -15,6 +15,8 @@ import { detectAndFill, detectOnly, getLastHandle, writeValueToField } from "./f
 import { canAutoFill, loadSession, recordFill, summarize } from "./fillSession";
 import { enrichWithAI } from "./aiEnrich";
 import { scrapeJobDescription } from "./jdScraper";
+import { applyRemoteHints } from "@/adapters/platforms";
+import { loadAdapterConfig } from "@/adapters/remoteConfig";
 
 chrome.runtime.onMessage.addListener(
   (message: ExtensionMessage, _sender, sendResponse: (r: ExtensionResponse) => void) => {
@@ -143,6 +145,8 @@ async function resumeSessionOnLoad(): Promise<void> {
 
 installNavigationWatcher();
 void resumeSessionOnLoad();
+// Extra detection fingerprints from remote config (hot-updatable, additive).
+void loadAdapterConfig().then(applyRemoteHints).catch(() => {});
 
 // Announce presence on load (helps the popup know the content script is live).
 void chrome.runtime.sendMessage({ type: "CONTENT_READY", url: location.href }).catch(() => {});
