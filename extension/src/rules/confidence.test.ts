@@ -37,10 +37,22 @@ describe("toTier", () => {
 });
 
 describe("labelMatchScore", () => {
-  it("scores exact, label, and placeholder matches per spec", () => {
+  it("scores signals by the layered priority (spec §2.2)", () => {
+    expect(labelMatchScore("autocomplete", false)).toBe(0.98);
     expect(labelMatchScore("label", true)).toBe(0.97);
     expect(labelMatchScore("label", false)).toBe(0.85);
+    expect(labelMatchScore("aria", false)).toBe(0.8);
     expect(labelMatchScore("placeholder", false)).toBe(0.75);
-    expect(labelMatchScore("aria", false)).toBe(0.75);
+    expect(labelMatchScore("attr", false)).toBe(0.7);
+    expect(labelMatchScore("nearby", false)).toBe(0.6);
+  });
+
+  it("keeps nearby text below the 0.7 auto-fill floor (badge only)", () => {
+    expect(labelMatchScore("nearby", false)).toBeLessThan(0.7);
+  });
+
+  it("'exact' only boosts label matches", () => {
+    expect(labelMatchScore("placeholder", true)).toBe(0.75);
+    expect(labelMatchScore("attr", true)).toBe(0.7);
   });
 });

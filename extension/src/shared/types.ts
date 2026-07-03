@@ -13,6 +13,8 @@ export type ATSPlatform =
   | "icims"
   | "smartrecruiters"
   | "bamboohr"
+  /** No known ATS matched, but the page has a fillable form — universal engine. */
+  | "generic"
   | "unknown";
 
 /** Input control kinds the fill engine knows how to write. */
@@ -43,6 +45,11 @@ export interface FieldRule {
   flags?: RuleFlag[];
   /** Optional value transform (e.g. boolean → "Yes"/"No"). */
   transform?: (value: unknown) => string;
+  /**
+   * HTML `autocomplete` tokens that authoritatively identify this field
+   * (e.g. "given-name"). Spec-defined semantics — strongest match signal.
+   */
+  autocomplete?: string[];
 }
 
 /** Confidence tier drives the badge color shown to the user. */

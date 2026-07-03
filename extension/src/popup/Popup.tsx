@@ -7,33 +7,68 @@ import type {
 } from "@/shared/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
-async function sendToActiveTab(message: object): Promise<ExtensionResponse | null> {
+async function activeTabId(): Promise<number | null> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) return null;
+  return tab?.id ?? null;
+}
+
+async function sendToActiveTab(message: object): Promise<ExtensionResponse | null> {
+  const tabId = await activeTabId();
+  if (tabId === null) return null;
   try {
-    return (await chrome.tabs.sendMessage(tab.id, message)) as ExtensionResponse;
+    return (await chrome.tabs.sendMessage(tabId, message)) as ExtensionResponse;
   } catch {
     // Content script not present on this page.
     return null;
   }
 }
 
+/**
+ * On sites outside the manifest's declared hosts the content script isn't
+ * loaded. The popup click is a user gesture, so `activeTab` grants temporary
+ * host access and we can inject it on demand — universal reach without
+ * requesting `<all_urls>` at install time.
+ */
+async function injectContentScript(): Promise<boolean> {
+  const tabId = await activeTabId();
+  if (tabId === null) return false;
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      files: ["src/content/index.js"],
+    });
+    return true;
+  } catch {
+    // Restricted page (chrome://, Web Store, …) — cannot inject.
+    return false;
+  }
+}
+
+/** Page status: a detected platform, or not-yet-scanned (no content script). */
+type PageState = ATSPlatform | "loading" | "unscanned";
+
 export function Popup() {
-  const [platform, setPlatform] = useState<ATSPlatform | "loading">("loading");
+  const [platform, setPlatform] = useState<PageState>("loading");
   const [result, setResult] = useState<FillResult | null>(null);
   const [filling, setFilling] = useState(false);
 
   useEffect(() => {
     void sendToActiveTab({ type: "GET_PAGE_STATUS" }).then((res) => {
       if (res && res.ok && "platform" in res) setPlatform(res.platform);
-      else setPlatform("unknown");
+      else setPlatform("unscanned");
     });
   }, []);
 
   const onFill = async () => {
     setFilling(true);
-    const res = await sendToActiveTab({ type: "FILL_FORM" });
-    if (res && res.ok && "result" in res) setResult(res.result);
+    let res = await sendToActiveTab({ type: "FILL_FORM" });
+    if (res === null && (await injectContentScript())) {
+      res = await sendToActiveTab({ type: "FILL_FORM" });
+    }
+    if (res && res.ok && "result" in res) {
+      setResult(res.result);
+      setPlatform(res.result.platform);
+    }
     setFilling(false);
   };
 
@@ -70,12 +105,24 @@ export function Popup() {
   );
 }
 
-function PlatformStatus({ platform }: { platform: ATSPlatform | "loading" }) {
+function PlatformStatus({ platform }: { platform: PageState }) {
   if (platform === "loading") return <p className="text-gray-500">Detecting…</p>;
   if (platform === "unknown")
     return (
       <p className="rounded bg-gray-100 px-2 py-1 text-gray-600">
         No supported ATS detected on this page.
+      </p>
+    );
+  if (platform === "unscanned")
+    return (
+      <p className="rounded bg-blue-50 px-2 py-1 text-blue-700">
+        Page not scanned yet — Autofill will scan this page for a form.
+      </p>
+    );
+  if (platform === "generic")
+    return (
+      <p className="rounded bg-green-50 px-2 py-1 text-green-700">
+        Form detected <span className="font-semibold">(universal engine)</span>
       </p>
     );
   return (

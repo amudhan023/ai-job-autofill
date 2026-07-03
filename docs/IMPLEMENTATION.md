@@ -30,6 +30,24 @@ Tracks what is actually built vs. the roadmap in [`PLAN.md`](../PLAN.md).
 | Remote adapter config (hot-update + fallback) | ✅ | `extension/src/adapters/remoteConfig.ts` |
 | `all_frames` content script (iCIMS iframe) | ✅ | `extension/src/manifest.json` |
 
+## Universality M1 (universal form engine core) — ✅ complete (2026-07-02)
+
+Design & full milestone plan: [`ARCHITECTURE_REVIEW.md`](./ARCHITECTURE_REVIEW.md).
+
+| Area | Status | Location |
+|---|---|---|
+| Generic adapter fallback (any site with a form) | ✅ | `extension/src/adapters/generic.ts`, `registry.ts` |
+| Multi-signal best-match scoring (replaces first-match-wins) | ✅ | `extension/src/rules/engine.ts`, `confidence.ts` |
+| Signal extraction: autocomplete / name / id / nearby text | ✅ | `extension/src/adapters/discover.ts` |
+| Alias-rich taxonomy + autocomplete tokens + new rules | ✅ | `extension/src/rules/fieldRules.ts` |
+| Hardened blocklist (DOB, criminal history, license; word-boundaries; all direct signals) | ✅ | `extension/src/rules/fieldRules.ts`, `engine.ts` |
+| On-demand injection on any site (activeTab + scripting, no `<all_urls>`) | ✅ | `extension/src/popup/Popup.tsx` |
+| iframe-safe label resolution (`ownerDocument`) | ✅ | `extension/src/adapters/domFill.ts`, `discover.ts` |
+
+Milestones M2–M6 (shadow DOM/iframe scan, custom widgets, profile schema
+expansion, multi-page session state, AI classify fallback + answer cache,
+file uploads) are specified in `ARCHITECTURE_REVIEW.md` §4 and not yet built.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

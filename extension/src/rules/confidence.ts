@@ -31,16 +31,38 @@ export function toTier(confidence: number): ConfidenceTier {
 }
 
 /**
- * Label-match scoring:
- *  - exact label text equals a rule keyword:    0.97
- *  - regex pattern matches the label:           0.85
- *  - regex matches placeholder/aria only:       0.75
+ * Where a rule matched a field. Layered by trustworthiness (see
+ * docs/ARCHITECTURE_REVIEW.md §2.2):
+ *  - autocomplete: spec-defined semantics — effectively ground truth
+ *  - label:        human-facing text (exact match scores highest)
+ *  - aria:         accessibility text, occasionally stale
+ *  - placeholder:  often an example rather than a name
+ *  - attr:         developer-facing name/id tokens (e.g. `first_name`)
+ *  - nearby:       surrounding text/heading — context only, below the
+ *                  auto-fill floor (0.7) so it badges but never writes
  */
-export function labelMatchScore(
-  matchedOn: "label" | "placeholder" | "aria",
-  exact: boolean,
-): number {
-  if (exact) return 0.97;
-  if (matchedOn === "label") return 0.85;
-  return 0.75;
+export type MatchSource =
+  | "autocomplete"
+  | "label"
+  | "aria"
+  | "placeholder"
+  | "attr"
+  | "nearby";
+
+const SOURCE_SCORES: Record<MatchSource, number> = {
+  autocomplete: 0.98,
+  label: 0.85,
+  aria: 0.8,
+  placeholder: 0.75,
+  attr: 0.7,
+  nearby: 0.6,
+};
+
+/**
+ * Signal-match scoring. `exact` only applies to label matches: a short label
+ * the pattern matches wholesale (e.g. label text "First Name") scores 0.97.
+ */
+export function labelMatchScore(matchedOn: MatchSource, exact: boolean): number {
+  if (exact && matchedOn === "label") return 0.97;
+  return SOURCE_SCORES[matchedOn];
 }

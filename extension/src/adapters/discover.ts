@@ -44,6 +44,9 @@ export function discoverWithin(root: ParentNode = document): FieldHandle[] {
       placeholder: "",
       ariaLabel: representative.getAttribute("aria-label") ?? "",
       type: group.every((el) => el.type === "checkbox") ? "checkbox" : "radio",
+      autocomplete: representative.getAttribute("autocomplete") ?? "",
+      nameAttr: representative.name ?? "",
+      idAttr: representative.id ?? "",
     };
     handles.push({ discovered, element: representative, group });
   }
@@ -52,14 +55,45 @@ export function discoverWithin(root: ParentNode = document): FieldHandle[] {
 }
 
 function toHandle(el: HTMLElement): FieldHandle {
+  const label = labelForControl(el);
   const discovered: DiscoveredField = {
     fieldId: nextId(),
-    label: labelForControl(el),
+    label,
     placeholder: el.getAttribute("placeholder") ?? "",
     ariaLabel: el.getAttribute("aria-label") ?? "",
     type: inferType(el),
+    autocomplete: el.getAttribute("autocomplete") ?? "",
+    nameAttr: el.getAttribute("name") ?? "",
+    idAttr: el.getAttribute("id") ?? "",
+    // Nearby text is a weak signal — only worth collecting when the field has
+    // no label of its own (keeps discovery cheap and avoids noisy matches).
+    nearbyText: label ? "" : nearbyText(el),
   };
   return { discovered, element: el };
+}
+
+/**
+ * Weak-context signal: the closest preceding text block (question text,
+ * section heading) for controls that have no associated label. Walks up to
+ * four ancestors, scanning a few preceding siblings at each level for a
+ * short text-bearing element that doesn't itself contain form controls.
+ */
+function nearbyText(el: HTMLElement): string {
+  let node: HTMLElement | null = el;
+  for (let depth = 0; depth < 4 && node; depth++) {
+    let sib = node.previousElementSibling;
+    let hops = 0;
+    while (sib && hops < 3) {
+      if (!sib.querySelector("input, textarea, select")) {
+        const text = sib.textContent?.trim() ?? "";
+        if (text.length >= 3 && text.length <= 160) return text;
+      }
+      sib = sib.previousElementSibling;
+      hops++;
+    }
+    node = node.parentElement;
+  }
+  return "";
 }
 
 function isFillable(el: HTMLElement): boolean {
@@ -98,8 +132,9 @@ function groupLabel(group: HTMLInputElement[]): string {
   if (groupEl) {
     const labelledby = groupEl.getAttribute("aria-labelledby");
     if (labelledby) {
+      const doc = first.ownerDocument ?? document;
       for (const id of labelledby.trim().split(/\s+/)) {
-        const ref = document.getElementById(id);
+        const ref = doc.getElementById(id);
         if (ref?.textContent?.trim()) return ref.textContent.trim();
       }
     }

@@ -39,8 +39,16 @@ describe("detectATS", () => {
     expect(r.score).toBeGreaterThanOrEqual(DETECTION_THRESHOLD);
   });
 
-  it("returns 'unknown' when nothing matches", () => {
-    document.body.innerHTML = `<form><input /></form>`;
+  it("falls back to the generic adapter when no ATS matches but a form exists", () => {
+    document.body.innerHTML = `<form><label for="a">First Name</label><input id="a" /></form>`;
+    const r = detectATS();
+    expect(r.platform).toBe("generic");
+    expect(r.adapter).not.toBeNull();
+    expect(r.adapter!.discoverFields().length).toBeGreaterThan(0);
+  });
+
+  it("returns 'unknown' only when the page has nothing fillable", () => {
+    document.body.innerHTML = `<p>Just an article, no form.</p>`;
     const r = detectATS();
     expect(r.platform).toBe("unknown");
     expect(r.adapter).toBeNull();

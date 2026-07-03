@@ -60,10 +60,15 @@ uvicorn app.main:app --reload
 
 ## Status
 
-This repo currently implements **Phase 1 (MVP foundation)**: extension scaffold,
-deterministic rule engine, confidence scoring, ATS detection, and Greenhouse /
-Lever / Ashby adapters, plus a FastAPI backend skeleton. See the roadmap in
-[`PLAN.md`](./PLAN.md) §9 and progress in [`docs/IMPLEMENTATION.md`](./docs/IMPLEMENTATION.md).
+Phases 1–5 are implemented (rule engine, 7 ATS adapters, AI answers, cover
+letters, analytics, orchestration), plus **Universality M1**: a universal form
+engine that works on *any* site with a form — multi-signal semantic field
+matching (autocomplete / label / aria / placeholder / name / id / nearby text),
+a generic adapter fallback when no ATS is recognized, and on-demand injection
+via `activeTab` (no `<all_urls>` permission). Architecture review, gap
+analysis, and the M2–M6 roadmap:
+[`docs/ARCHITECTURE_REVIEW.md`](./docs/ARCHITECTURE_REVIEW.md). Progress log:
+[`docs/IMPLEMENTATION.md`](./docs/IMPLEMENTATION.md).
 
 ## Principles
 

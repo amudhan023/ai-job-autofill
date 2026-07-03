@@ -85,9 +85,12 @@ export function setRadioOrCheckbox(
 
 /** Best-effort label text for a control (associated <label>, aria, placeholder). */
 export function labelForControl(el: HTMLElement): string {
+  // Resolve against the control's own document so lookups work inside
+  // same-origin iframes, not just the top frame.
+  const doc = el.ownerDocument ?? document;
   const id = el.getAttribute("id");
   if (id) {
-    const lbl = document.querySelector(`label[for="${CSS.escape(id)}"]`);
+    const lbl = doc.querySelector(`label[for="${CSS.escape(id)}"]`);
     if (lbl?.textContent) return lbl.textContent.trim();
   }
   const wrapping = el.closest("label");
@@ -96,7 +99,7 @@ export function labelForControl(el: HTMLElement): string {
   if (aria) return aria.trim();
   const labelledby = el.getAttribute("aria-labelledby");
   if (labelledby) {
-    const ref = document.getElementById(labelledby);
+    const ref = doc.getElementById(labelledby);
     if (ref?.textContent) return ref.textContent.trim();
   }
   return el.getAttribute("placeholder")?.trim() ?? "";
