@@ -9,30 +9,93 @@ function nextId(): string {
 }
 
 /**
- * Generic field discovery within a root element. Adapters call this and may
- * tag results with `atsKnownField`/`adapterRuleId` for fields they recognize.
+ * Native form controls plus custom text widgets (contenteditable rich-text
+ * fields, ARIA textboxes). Comboboxes built on <input> are already covered by
+ * the "input" selector; their special write path lives in domFill.
+ */
+const CONTROL_SELECTOR = [
+  "input",
+  "textarea",
+  "select",
+  '[contenteditable=""]',
+  '[contenteditable="true"]',
+  '[contenteditable="plaintext-only"]',
+  '[role="textbox"]:not(input):not(textarea)',
+].join(", ");
+
+/**
+ * Deep scan (M2): collect all query roots reachable from `root` — the root
+ * itself, every open shadow root, and every same-origin iframe document.
+ * Closed shadow roots and cross-origin frames are unreachable by design
+ * (cross-origin frames are covered by the content script's own instance
+ * running there via `all_frames`).
+ */
+function collectRoots(root: ParentNode): ParentNode[] {
+  const roots: ParentNode[] = [root];
+  const queue: ParentNode[] = [root];
+  while (queue.length > 0) {
+    const scope = queue.shift()!;
+    for (const el of Array.from(scope.querySelectorAll<HTMLElement>("*"))) {
+      // instanceof is realm-specific (fails for iframe-owned elements), so
+      // detect by tag/property instead.
+      if (el.shadowRoot) {
+        roots.push(el.shadowRoot);
+        queue.push(el.shadowRoot);
+      }
+      if (el.tagName === "IFRAME" || el.tagName === "FRAME") {
+        try {
+          const doc = (el as HTMLIFrameElement).contentDocument;
+          if (doc?.body) {
+            roots.push(doc);
+            queue.push(doc);
+          }
+        } catch {
+          // Cross-origin — handled by the frame's own content script.
+        }
+      }
+    }
+  }
+  return roots;
+}
+
+function isTag(el: Element, tag: string): boolean {
+  return el.tagName === tag;
+}
+
+function isRadioOrCheckbox(el: HTMLElement): el is HTMLInputElement {
+  const type = (el as HTMLInputElement).type;
+  return isTag(el, "INPUT") && (type === "radio" || type === "checkbox");
+}
+
+/**
+ * Generic field discovery within a root element. Walks open shadow roots and
+ * same-origin iframes (M2 deep scan). Adapters call this and may tag results
+ * with `atsKnownField`/`adapterRuleId` for fields they recognize.
  *
- * Radio/checkbox controls are grouped by `name` so the engine can pick the
+ * Radio/checkbox controls are grouped by `name` (per root, so identical names
+ * in different frames/shadow roots don't collide) so the engine can pick the
  * right option (Yes/No) rather than treating each input separately.
  */
 export function discoverWithin(root: ParentNode = document): FieldHandle[] {
-  const controls = Array.from(
-    root.querySelectorAll<HTMLElement>("input, textarea, select"),
-  ).filter(isFillable);
-
   const handles: FieldHandle[] = [];
   const radioGroups = new Map<string, HTMLInputElement[]>();
 
-  for (const el of controls) {
-    if (el instanceof HTMLInputElement && (el.type === "radio" || el.type === "checkbox")) {
-      const name = el.name || labelForControl(el);
-      const list = radioGroups.get(name) ?? [];
-      list.push(el);
-      radioGroups.set(name, list);
-      continue;
+  collectRoots(root).forEach((scope, rootIndex) => {
+    const controls = Array.from(
+      scope.querySelectorAll<HTMLElement>(CONTROL_SELECTOR),
+    ).filter(isFillable);
+
+    for (const el of controls) {
+      if (isRadioOrCheckbox(el)) {
+        const key = `${rootIndex}::${el.name || labelForControl(el)}`;
+        const list = radioGroups.get(key) ?? [];
+        list.push(el);
+        radioGroups.set(key, list);
+        continue;
+      }
+      handles.push(toHandle(el));
     }
-    handles.push(toHandle(el));
-  }
+  });
 
   // One handle per radio/checkbox group (keyed on the group's shared label).
   for (const [, group] of radioGroups) {
@@ -97,12 +160,17 @@ function nearbyText(el: HTMLElement): string {
 }
 
 function isFillable(el: HTMLElement): boolean {
-  if (el instanceof HTMLInputElement) {
+  if (isTag(el, "INPUT")) {
     const hidden = ["hidden", "submit", "button", "reset", "image", "file"];
-    if (hidden.includes(el.type)) return false;
+    if (hidden.includes((el as HTMLInputElement).type)) return false;
   }
   if ((el as HTMLInputElement).disabled) return false;
-  const style = window.getComputedStyle(el);
+  // Contenteditable variants: skip explicitly disabled editors.
+  if (el.getAttribute("contenteditable") === "false") return false;
+  if (el.getAttribute("aria-readonly") === "true") return false;
+  // Use the element's own window — computed styles are per-document (iframes).
+  const win = el.ownerDocument?.defaultView ?? window;
+  const style = win.getComputedStyle(el);
   if (style.display === "none" || style.visibility === "hidden") return false;
   return true;
 }

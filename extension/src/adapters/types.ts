@@ -39,10 +39,18 @@ export function scoreSignals(s: DetectionSignals): number {
 }
 
 export function inferType(el: HTMLElement): FieldType {
-  if (el instanceof HTMLTextAreaElement) return "textarea";
-  if (el instanceof HTMLSelectElement) return "select";
-  if (el instanceof HTMLInputElement) {
-    switch (el.type) {
+  // tagName checks instead of instanceof: elements owned by same-origin
+  // iframes belong to a different realm, where instanceof always fails.
+  if (el.tagName === "TEXTAREA") return "textarea";
+  if (el.tagName === "SELECT") return "select";
+  // Custom text widgets (contenteditable rich text, ARIA textbox): treat
+  // multiline editors as textarea, single-line ones as text.
+  const editable = el.getAttribute("contenteditable");
+  if ((editable !== null && editable !== "false") || el.getAttribute("role") === "textbox") {
+    return el.getAttribute("aria-multiline") === "false" ? "text" : "textarea";
+  }
+  if (el.tagName === "INPUT") {
+    switch ((el as HTMLInputElement).type) {
       case "email":
         return "email";
       case "tel":

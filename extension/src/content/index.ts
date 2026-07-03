@@ -31,7 +31,7 @@ async function handle(message: ExtensionMessage): Promise<ExtensionResponse> {
     }
     case "FILL_FORM": {
       const profile = await loadProfile();
-      const result = detectAndFill(profile);
+      const result = await detectAndFill(profile);
       // Report back to the background worker for history persistence.
       void chrome.runtime.sendMessage({ type: "FILL_DONE", result }).catch(() => {});
       return { ok: true, result };

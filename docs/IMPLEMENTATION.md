@@ -48,6 +48,24 @@ Milestones M2–M6 (shadow DOM/iframe scan, custom widgets, profile schema
 expansion, multi-page session state, AI classify fallback + answer cache,
 file uploads) are specified in `ARCHITECTURE_REVIEW.md` §4 and not yet built.
 
+## Universality M2 (deep reach) — ✅ complete (2026-07-02)
+
+| Area | Status | Location |
+|---|---|---|
+| Deep scan: open shadow roots + same-origin iframes | ✅ | `extension/src/adapters/discover.ts` |
+| Realm-safe element handling (tagName checks, per-realm native setters) | ✅ | `discover.ts`, `domFill.ts`, `fillExecutor.ts`, `types.ts` |
+| ARIA combobox writer (type value, click matching role=option) | ✅ | `extension/src/adapters/domFill.ts` |
+| Contenteditable / role=textbox discovery + writer | ✅ | `discover.ts`, `types.ts`, `domFill.ts` |
+| Shadow-root-scoped label resolution | ✅ | `extension/src/adapters/domFill.ts` |
+| Post-fill MutationObserver settle window (conditional fields) | ✅ | `extension/src/content/fillExecutor.ts` |
+
+`detectAndFill` is now async: after a successful pass it watches the DOM for
+~1.2 s (debounced, incremental — only never-seen elements are evaluated) so
+conditional fields revealed by our own writes get filled in the same run.
+Cross-origin iframes are covered by their own content-script instance
+(`all_frames` + popup injection with `allFrames: true`); closed shadow roots
+are unreachable by design.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

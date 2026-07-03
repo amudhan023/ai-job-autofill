@@ -2,8 +2,11 @@ import type { UserProfile } from "@/shared/profile";
 import type { FieldMatch, FillResult } from "@/shared/types";
 import { evaluateField } from "@/rules/engine";
 import { detectATS } from "@/adapters/registry";
-import type { FieldHandle } from "@/adapters/types";
+import type { ATSAdapter, FieldHandle } from "@/adapters/types";
 import {
+  isComboboxInput,
+  setComboboxValue,
+  setContentEditableValue,
   setInputValue,
   setRadioOrCheckbox,
   setSelectValue,
@@ -12,51 +15,147 @@ import {
 /** Confidence floor below which we never auto-write (just badge it). */
 const AUTOFILL_FLOOR = 0.7;
 
+/** Default watch window for late/conditional fields after a fill pass (M2). */
+const DEFAULT_SETTLE_MS = 1200;
+
+export interface FillOptions {
+  /**
+   * After a successful fill pass, keep watching the DOM this long for
+   * conditional fields rendered in reaction to the values we wrote
+   * (e.g. "Yes" reveals a follow-up question). 0 disables the window.
+   */
+  settleMs?: number;
+  /** Quiet period after a mutation burst before rescanning. */
+  debounceMs?: number;
+}
+
 /**
- * Detect the ATS, evaluate every field, and fill the ones we're confident about.
- * ZERO-MUTATION GUARANTEE: this function only writes input values; it has no
- * path that clicks submit or mutates the form's submission.
+ * Detect the ATS, evaluate every field, and fill the ones we're confident
+ * about; then briefly watch for late-rendered fields and fill only those.
+ * ZERO-MUTATION GUARANTEE: this function only writes input values (including
+ * picking combobox options); it has no path that clicks submit or mutates the
+ * form's submission.
  */
-export function detectAndFill(profile: UserProfile): FillResult {
+export async function detectAndFill(
+  profile: UserProfile,
+  opts: FillOptions = {},
+): Promise<FillResult> {
   const { platform, adapter } = detectATS();
   const handles: FieldHandle[] = adapter ? adapter.discoverFields() : [];
 
   const matches: FieldMatch[] = [];
+  const seen = new Set<HTMLElement>();
   let filled = 0;
 
   for (const handle of handles) {
+    seen.add(handle.element);
     const match = evaluateField(handle.discovered, profile);
     matches.push(match);
+    if (shouldWrite(match) && (await writeField(handle, match))) filled++;
+  }
 
-    if (match.value !== null && match.confidence >= AUTOFILL_FLOOR && !match.flags.includes("confirm")) {
-      if (writeField(handle, match)) filled++;
-    }
+  // Post-fill settle window: only worth watching when we actually wrote
+  // something (conditional fields appear in reaction to our writes).
+  const settleMs = opts.settleMs ?? DEFAULT_SETTLE_MS;
+  if (adapter && filled > 0 && settleMs > 0) {
+    filled += await fillLateFields(adapter, profile, seen, matches, settleMs, opts.debounceMs ?? 150);
   }
 
   return {
     platform,
     url: location.href,
     filledCount: filled,
-    totalFields: handles.length,
+    totalFields: matches.length,
     matches,
     timestamp: Date.now(),
   };
 }
 
+function shouldWrite(match: FieldMatch): boolean {
+  return (
+    match.value !== null &&
+    match.confidence >= AUTOFILL_FLOOR &&
+    !match.flags.includes("confirm")
+  );
+}
+
+/**
+ * Watch the DOM for fields that render after the fill pass (conditional
+ * questions, async wizard steps) and fill only the not-yet-seen ones,
+ * folding them into the same result. Resolves at the deadline; rescans are
+ * debounced and incremental (per new element, never re-writing seen ones).
+ */
+function fillLateFields(
+  adapter: ATSAdapter,
+  profile: UserProfile,
+  seen: Set<HTMLElement>,
+  matches: FieldMatch[],
+  settleMs: number,
+  debounceMs: number,
+): Promise<number> {
+  return new Promise((resolve) => {
+    let extra = 0;
+    let debounce: ReturnType<typeof setTimeout> | undefined;
+    let scanning = false;
+
+    const run = async () => {
+      if (scanning) return;
+      scanning = true;
+      for (const handle of adapter.discoverFields()) {
+        if (seen.has(handle.element)) continue;
+        seen.add(handle.element);
+        const match = evaluateField(handle.discovered, profile);
+        matches.push(match);
+        if (shouldWrite(match) && (await writeField(handle, match))) extra++;
+      }
+      scanning = false;
+    };
+
+    const observer = new MutationObserver(() => {
+      if (debounce) clearTimeout(debounce);
+      debounce = setTimeout(() => void run(), debounceMs);
+    });
+    observer.observe(document.body ?? document.documentElement, {
+      childList: true,
+      subtree: true,
+    });
+
+    setTimeout(() => {
+      observer.disconnect();
+      if (debounce) clearTimeout(debounce);
+      resolve(extra);
+    }, settleMs);
+  });
+}
+
 /** Write a single resolved value to its control using type-appropriate logic. */
-function writeField(handle: FieldHandle, match: FieldMatch): boolean {
+async function writeField(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
   const { element, group } = handle;
   const value = match.value;
   if (value === null) return false;
 
-  if (element instanceof HTMLInputElement && (element.type === "radio" || element.type === "checkbox")) {
+  // tagName checks instead of instanceof: iframe-owned elements belong to a
+  // different realm where instanceof against top-frame constructors fails.
+  const tag = element.tagName;
+  const inputType = (element as HTMLInputElement).type;
+
+  if (tag === "INPUT" && (inputType === "radio" || inputType === "checkbox")) {
     return group ? setRadioOrCheckbox(group, value) : false;
   }
-  if (element instanceof HTMLSelectElement) {
-    return setSelectValue(element, value);
+  if (tag === "SELECT") {
+    return setSelectValue(element as HTMLSelectElement, value);
   }
-  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-    setInputValue(element, value);
+  if (tag === "INPUT" && isComboboxInput(element)) {
+    return setComboboxValue(element as HTMLInputElement, value);
+  }
+  if (tag === "INPUT" || tag === "TEXTAREA") {
+    setInputValue(element as HTMLInputElement | HTMLTextAreaElement, value);
+    return true;
+  }
+  // Custom text widgets discovered in M2 (contenteditable / role=textbox).
+  const editable = element.getAttribute("contenteditable");
+  if ((editable !== null && editable !== "false") || element.getAttribute("role") === "textbox") {
+    setContentEditableValue(element, value);
     return true;
   }
   return false;

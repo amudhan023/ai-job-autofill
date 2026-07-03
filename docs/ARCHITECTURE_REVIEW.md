@@ -255,8 +255,17 @@ service. They work; they get extended, not replaced.
 
 ## 6. Implementation status
 
-- [x] **M1** — landed (this change): `adapters/generic.ts`, multi-signal
+- [x] **M1** — landed: `adapters/generic.ts`, multi-signal
   matcher in `rules/engine.ts` + `rules/confidence.ts`, expanded signals in
   `adapters/discover.ts`, alias/autocomplete-enriched `rules/fieldRules.ts`,
   popup on-demand injection.
-- [ ] M2 – M6 — not started.
+- [x] **M2** — landed: deep scan pass in `adapters/discover.ts` (open shadow
+  roots + same-origin iframe documents, realm-safe element checks); widget
+  writers in `adapters/domFill.ts` (ARIA combobox type-and-pick,
+  contenteditable/role=textbox, per-realm native setters, root-node-scoped
+  label lookup); async `detectAndFill` with a post-fill MutationObserver
+  settle window in `content/fillExecutor.ts` that fills late-rendered
+  conditional fields incrementally. Cross-origin iframes remain covered by
+  the frame's own content-script instance (`all_frames`); closed shadow
+  roots are unreachable by design.
+- [ ] M3 – M6 — not started.

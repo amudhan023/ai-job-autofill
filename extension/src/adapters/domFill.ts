@@ -4,32 +4,45 @@
  * React-controlled inputs ignore `el.value = x`; they only react to the native
  * value setter followed by a dispatched InputEvent. These helpers do that so
  * fills register correctly on React/Vue ATS forms (Workday, Ashby, Greenhouse).
+ *
+ * M2: setters are resolved against the element's own realm (window), so
+ * writes work on controls inside same-origin iframes, and label lookups are
+ * scoped to the element's root node, so they work inside open shadow roots.
  */
 
-const nativeInputSetter = Object.getOwnPropertyDescriptor(
-  window.HTMLInputElement.prototype,
-  "value",
-)?.set;
+/**
+ * Native `value` setter from the element's own realm. Prototype descriptors
+ * are per-window: an element owned by an iframe document needs that window's
+ * setter, not the top frame's.
+ */
+function nativeValueSetter(el: HTMLElement): ((v: string) => void) | undefined {
+  const win = (el.ownerDocument?.defaultView ?? window) as unknown as Record<
+    string,
+    { prototype: object } | undefined
+  >;
+  const ctor =
+    el.tagName === "TEXTAREA"
+      ? win.HTMLTextAreaElement
+      : el.tagName === "SELECT"
+        ? win.HTMLSelectElement
+        : win.HTMLInputElement;
+  const set = ctor && Object.getOwnPropertyDescriptor(ctor.prototype, "value")?.set;
+  return set ? (v: string) => set.call(el, v) : undefined;
+}
 
-const nativeTextareaSetter = Object.getOwnPropertyDescriptor(
-  window.HTMLTextAreaElement.prototype,
-  "value",
-)?.set;
-
-const nativeSelectSetter = Object.getOwnPropertyDescriptor(
-  window.HTMLSelectElement.prototype,
-  "value",
-)?.set;
+function dispatchInputAndChange(el: HTMLElement): void {
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
 
 export function setInputValue(el: HTMLInputElement | HTMLTextAreaElement, value: string): void {
-  const setter = el instanceof HTMLTextAreaElement ? nativeTextareaSetter : nativeInputSetter;
+  const setter = nativeValueSetter(el);
   if (setter) {
-    setter.call(el, value);
+    setter(value);
   } else {
     el.value = value;
   }
-  el.dispatchEvent(new Event("input", { bubbles: true }));
-  el.dispatchEvent(new Event("change", { bubbles: true }));
+  dispatchInputAndChange(el);
 }
 
 export function setSelectValue(el: HTMLSelectElement, value: string): boolean {
@@ -40,13 +53,92 @@ export function setSelectValue(el: HTMLSelectElement, value: string): boolean {
     options.find((o) => o.text.trim().toLowerCase() === value.trim().toLowerCase()) ??
     options.find((o) => o.text.trim().toLowerCase().includes(value.trim().toLowerCase()));
   if (!match) return false;
-  if (nativeSelectSetter) {
-    nativeSelectSetter.call(el, match.value);
+  const setter = nativeValueSetter(el);
+  if (setter) {
+    setter(match.value);
   } else {
     el.value = match.value;
   }
   el.dispatchEvent(new Event("change", { bubbles: true }));
   return true;
+}
+
+/**
+ * Contenteditable / ARIA-textbox writer. Replaces the editor's text content
+ * and dispatches an InputEvent so framework editors (Draft.js-lite, simple
+ * rich-text wrappers) register the change. Never touches surrounding markup.
+ */
+export function setContentEditableValue(el: HTMLElement, value: string): void {
+  el.focus?.();
+  el.textContent = value;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+/** True when an input is the text entry of an ARIA combobox (react-select & co). */
+export function isComboboxInput(el: HTMLElement): boolean {
+  if (el.tagName !== "INPUT") return false;
+  if (el.getAttribute("role") === "combobox") return true;
+  if (el.getAttribute("aria-autocomplete") === "list") return true;
+  return el.closest("[role='combobox']") !== null;
+}
+
+/**
+ * ARIA combobox writer: type the value into the text input (which filters the
+ * suggestion list), wait briefly for options to render, then select the best
+ * matching [role=option]. Selecting an option is a value choice, not a form
+ * mutation — the zero-mutation guarantee (never submit) is unaffected.
+ *
+ * If no matching option appears, the typed text is left in place (partial
+ * success): many comboboxes accept free text, and the user reviews anyway.
+ */
+export async function setComboboxValue(
+  el: HTMLInputElement,
+  value: string,
+  optionWaitMs = 150,
+): Promise<boolean> {
+  el.focus?.();
+  setInputValue(el, value);
+  await delay(optionWaitMs);
+
+  const option = findComboboxOption(el, value);
+  if (option) {
+    // Full pointer sequence — many custom listboxes listen on mousedown.
+    for (const type of ["pointerdown", "mousedown", "mouseup", "click"]) {
+      option.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
+    }
+  }
+  return true;
+}
+
+function findComboboxOption(input: HTMLInputElement, value: string): HTMLElement | null {
+  const scopes: ParentNode[] = [];
+  // aria-controls / aria-owns points at the listbox (per the ARIA pattern).
+  const doc = input.ownerDocument ?? document;
+  const controlsId =
+    input.getAttribute("aria-controls") ??
+    input.getAttribute("aria-owns") ??
+    input.closest("[role='combobox']")?.getAttribute("aria-controls");
+  if (controlsId) {
+    const listbox = doc.getElementById(controlsId);
+    if (listbox) scopes.push(listbox);
+  }
+  // Fallback: any listbox in the input's root (portal-rendered menus included).
+  scopes.push(queryScopeFor(input));
+
+  const wanted = value.trim().toLowerCase();
+  for (const scope of scopes) {
+    const options = Array.from(scope.querySelectorAll<HTMLElement>("[role='option']"));
+    const match =
+      options.find((o) => (o.textContent ?? "").trim().toLowerCase() === wanted) ??
+      options.find((o) => (o.textContent ?? "").trim().toLowerCase().includes(wanted));
+    if (match) return match;
+  }
+  return null;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function setRadioOrCheckbox(
@@ -83,14 +175,26 @@ export function setRadioOrCheckbox(
   return false;
 }
 
+/**
+ * The element's root as a queryable scope (document, shadow root, or detached
+ * subtree). Duck-typed rather than instanceof — root nodes of iframe-owned
+ * elements belong to a different realm where instanceof always fails.
+ */
+function queryScopeFor(el: HTMLElement): ParentNode {
+  const rootNode = el.getRootNode() as ParentNode;
+  if (typeof rootNode.querySelector === "function") return rootNode;
+  return el.ownerDocument ?? document;
+}
+
 /** Best-effort label text for a control (associated <label>, aria, placeholder). */
 export function labelForControl(el: HTMLElement): string {
-  // Resolve against the control's own document so lookups work inside
-  // same-origin iframes, not just the top frame.
-  const doc = el.ownerDocument ?? document;
+  // Scope lookups to the element's root node (shadow root or document) so
+  // label[for] and aria-labelledby resolve inside shadow DOM and iframes.
+  const scope = queryScopeFor(el);
+
   const id = el.getAttribute("id");
   if (id) {
-    const lbl = doc.querySelector(`label[for="${CSS.escape(id)}"]`);
+    const lbl = scope.querySelector(`label[for="${CSS.escape(id)}"]`);
     if (lbl?.textContent) return lbl.textContent.trim();
   }
   const wrapping = el.closest("label");
@@ -99,7 +203,7 @@ export function labelForControl(el: HTMLElement): string {
   if (aria) return aria.trim();
   const labelledby = el.getAttribute("aria-labelledby");
   if (labelledby) {
-    const ref = doc.getElementById(labelledby);
+    const ref = scope.querySelector(`[id="${CSS.escape(labelledby)}"]`);
     if (ref?.textContent) return ref.textContent.trim();
   }
   return el.getAttribute("placeholder")?.trim() ?? "";
