@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 
 
 class Location(BaseModel):
+    street: str = ""
+    street2: str = ""
     city: str = ""
     state: str = ""
     country: str = ""
@@ -17,7 +19,9 @@ class Location(BaseModel):
 
 class PersonalInfo(BaseModel):
     firstName: str = ""
+    middleName: str = ""
     lastName: str = ""
+    preferredName: str = ""
     email: str = ""
     phone: str = ""
     location: Location = Field(default_factory=Location)
@@ -34,6 +38,15 @@ class WorkAuth(BaseModel):
     usAuthorized: bool = False
     sponsorshipNeeded: bool = False
     visaType: str = ""
+    clearance: str = ""
+
+
+class Reference(BaseModel):
+    name: str = ""
+    relationship: str = ""
+    company: str = ""
+    email: str = ""
+    phone: str = ""
 
 
 class Experience(BaseModel):
@@ -67,6 +80,7 @@ class Preferences(BaseModel):
     hearAboutUs: str = "Job Board"
     consentToContact: bool = True
     previouslyEmployedHere: bool = False
+    willingToTravel: bool = False
 
 
 class ProfileMeta(BaseModel):
@@ -82,4 +96,5 @@ class UserProfile(BaseModel):
     education: list[Education] = Field(default_factory=list)
     skills: Skills = Field(default_factory=Skills)
     preferences: Preferences = Field(default_factory=Preferences)
+    references: list[Reference] = Field(default_factory=list)
     meta: ProfileMeta = Field(default_factory=ProfileMeta)

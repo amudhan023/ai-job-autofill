@@ -5,6 +5,10 @@
  */
 
 export interface Location {
+  /** Street address line 1 (e.g. "123 Main St"). */
+  street: string;
+  /** Street address line 2 (apartment, suite, unit). */
+  street2: string;
   city: string;
   state: string;
   country: string;
@@ -13,7 +17,11 @@ export interface Location {
 
 export interface PersonalInfo {
   firstName: string;
+  /** Middle name or initial — some legal-name forms require it. */
+  middleName: string;
   lastName: string;
+  /** Preferred/display name; falls back to first+last when empty. */
+  preferredName: string;
   email: string;
   phone: string;
   location: Location;
@@ -33,6 +41,17 @@ export interface WorkAuth {
   usAuthorized: boolean;
   sponsorshipNeeded: boolean;
   visaType: VisaType;
+  /** Security clearance level ("", "None", "Public Trust", "Secret", …). */
+  clearance: string;
+}
+
+/** A professional reference (defense-heavy and older ATS forms ask for them). */
+export interface Reference {
+  name: string;
+  relationship: string;
+  company: string;
+  email: string;
+  phone: string;
 }
 
 export interface Experience {
@@ -69,6 +88,8 @@ export interface Preferences {
   consentToContact: boolean;
   /** Answer for "previously employed here?" questions — default false → "No". */
   previouslyEmployedHere: boolean;
+  /** "Willing to travel?" questions — default false → "No". */
+  willingToTravel: boolean;
 }
 
 export interface ProfileMeta {
@@ -86,6 +107,7 @@ export interface UserProfile {
   education: Education[];
   skills: Skills;
   preferences: Preferences;
+  references: Reference[];
   meta: ProfileMeta;
 }
 
@@ -94,13 +116,15 @@ export function emptyProfile(): UserProfile {
   return {
     personal: {
       firstName: "",
+      middleName: "",
       lastName: "",
+      preferredName: "",
       email: "",
       phone: "",
-      location: { city: "", state: "", country: "", postalCode: "" },
+      location: { street: "", street2: "", city: "", state: "", country: "", postalCode: "" },
     },
     links: { linkedin: "", github: "", portfolio: "", website: "" },
-    workAuth: { usAuthorized: false, sponsorshipNeeded: false, visaType: "" },
+    workAuth: { usAuthorized: false, sponsorshipNeeded: false, visaType: "", clearance: "" },
     experience: [],
     education: [],
     skills: { technical: [], languages: [], certifications: [] },
@@ -112,7 +136,37 @@ export function emptyProfile(): UserProfile {
       hearAboutUs: "Job Board",
       consentToContact: true,
       previouslyEmployedHere: false,
+      willingToTravel: false,
     },
+    references: [],
     meta: { totalYearsExp: 0 },
   };
+}
+
+/**
+ * Schema migration: fill any fields missing from a stored profile (written by
+ * an older extension version) with blank defaults, recursively. Arrays and
+ * scalars are taken from the stored value when present; unknown extra keys
+ * are preserved so downgrades don't lose data.
+ */
+export function migrateProfile(stored: unknown): UserProfile {
+  return deepMerge(emptyProfile(), stored) as UserProfile;
+}
+
+function deepMerge(defaults: unknown, stored: unknown): unknown {
+  if (stored === undefined || stored === null) return defaults;
+  if (
+    typeof defaults !== "object" ||
+    defaults === null ||
+    Array.isArray(defaults) ||
+    typeof stored !== "object" ||
+    Array.isArray(stored)
+  ) {
+    return stored;
+  }
+  const out: Record<string, unknown> = { ...(stored as Record<string, unknown>) };
+  for (const [key, defVal] of Object.entries(defaults as Record<string, unknown>)) {
+    out[key] = deepMerge(defVal, (stored as Record<string, unknown>)[key]);
+  }
+  return out;
 }

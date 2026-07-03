@@ -39,13 +39,16 @@ def test_get_unknown_profile_404() -> None:
     assert client.get("/profile/does-not-exist").status_code == 404
 
 
-def test_resume_parse_stub_returns_empty_profile_without_key() -> None:
-    # A VALID (parseable) file with no AI configured → empty stub profile.
+def test_resume_parse_without_key_uses_regex_extraction() -> None:
+    # A VALID (parseable) file with no AI configured → regex fallback still
+    # extracts name/contact basics (see commit 9b9ea4c); AI-only fields stay blank.
     files = {"file": ("resume.txt", b"Jane Doe\nStaff Engineer", "text/plain")}
     res = client.post("/resume/parse", files=files)
     assert res.status_code == 200
-    # Stub path returns a blank profile (no AI key configured).
-    assert res.json()["personal"]["firstName"] == ""
+    body = res.json()
+    assert body["personal"]["firstName"] == "Jane"
+    assert body["personal"]["lastName"] == "Doe"
+    assert body["experience"] == []  # structured extraction still needs AI
 
 
 def test_ai_answer_stub_flags_stubbed() -> None:

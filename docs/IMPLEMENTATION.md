@@ -66,6 +66,19 @@ Cross-origin iframes are covered by their own content-script instance
 (`all_frames` + popup injection with `allFrames: true`); closed shadow roots
 are unreachable by design.
 
+## Universality M3 (profile depth) — ✅ complete (2026-07-02)
+
+| Area | Status | Location |
+|---|---|---|
+| Schema: middle/preferred name, street + line 2, clearance, willing-to-travel, references | ✅ | `extension/src/shared/profile.ts` |
+| Migration: stored profiles deep-merged with new defaults on load | ✅ | `shared/profile.ts` (`migrateProfile`), `storage/profile.ts` |
+| Rules: preferredName (falls back to full name), middleName, street/street2, clearance, travel, reference name/email/phone/relationship/company | ✅ | `extension/src/rules/fieldRules.ts`, `transforms.ts` |
+| Options UI: address fields, visa-type + remote-preference selects, clearance, travel/relocate checkboxes, references editor | ✅ | `extension/src/options/Options.tsx`, `Field.tsx` |
+| Backend Pydantic mirror | ✅ | `backend/app/models/profile.py` |
+
+Reference contact rules intentionally never fall back to the candidate's own
+email/phone — an empty references list means those fields stay blank.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

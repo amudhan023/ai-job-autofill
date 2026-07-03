@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useProfileStore } from "@/storage/store";
-import type { Experience, Education } from "@/shared/profile";
-import { CheckField, Section, TextField } from "./Field";
+import type { Experience, Education, Reference, VisaType } from "@/shared/profile";
+import { CheckField, Section, SelectField, TextField } from "./Field";
 import { Dashboard } from "./Dashboard";
 import { loadBackendUrl, saveBackendUrl } from "@/storage/settings";
 import { BackendClient } from "@/api/client";
@@ -85,12 +85,20 @@ export function Options() {
           <Section title="Personal">
             <TextField label="First name" value={profile.personal.firstName}
               onChange={(v) => update((d) => (d.personal.firstName = v))} />
+            <TextField label="Middle name" value={profile.personal.middleName}
+              onChange={(v) => update((d) => (d.personal.middleName = v))} />
             <TextField label="Last name" value={profile.personal.lastName}
               onChange={(v) => update((d) => (d.personal.lastName = v))} />
+            <TextField label="Preferred name (optional)" value={profile.personal.preferredName}
+              onChange={(v) => update((d) => (d.personal.preferredName = v))} />
             <TextField label="Email" type="email" value={profile.personal.email}
               onChange={(v) => update((d) => (d.personal.email = v))} />
             <TextField label="Phone" type="tel" value={profile.personal.phone}
               onChange={(v) => update((d) => (d.personal.phone = v))} />
+            <TextField label="Street address" value={profile.personal.location.street}
+              onChange={(v) => update((d) => (d.personal.location.street = v))} />
+            <TextField label="Apt / suite / unit" value={profile.personal.location.street2}
+              onChange={(v) => update((d) => (d.personal.location.street2 = v))} />
             <TextField label="City" value={profile.personal.location.city}
               onChange={(v) => update((d) => (d.personal.location.city = v))} />
             <TextField label="State" value={profile.personal.location.state}
@@ -119,6 +127,19 @@ export function Options() {
             <CheckField label="Requires sponsorship"
               checked={profile.workAuth.sponsorshipNeeded}
               onChange={(v) => update((d) => (d.workAuth.sponsorshipNeeded = v))} />
+            <SelectField label="Visa / status" value={profile.workAuth.visaType}
+              onChange={(v) => update((d) => (d.workAuth.visaType = v as VisaType))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "USC", label: "US Citizen" },
+                { value: "GC", label: "Green Card" },
+                { value: "H1B", label: "H-1B" },
+                { value: "F1_OPT", label: "F-1 / OPT" },
+                { value: "TN", label: "TN" },
+                { value: "OTHER", label: "Other" },
+              ]} />
+            <TextField label="Security clearance (optional)" value={profile.workAuth.clearance}
+              onChange={(v) => update((d) => (d.workAuth.clearance = v))} />
           </Section>
 
           <Section title="Experience">
@@ -190,6 +211,48 @@ export function Options() {
               checked={profile.preferences.consentToContact}
               onChange={(v) => update((d) => (d.preferences.consentToContact = v))}
             />
+            <CheckField
+              label="Willing to relocate"
+              checked={profile.preferences.willingToRelocate}
+              onChange={(v) => update((d) => (d.preferences.willingToRelocate = v))}
+            />
+            <CheckField
+              label="Willing to travel"
+              checked={profile.preferences.willingToTravel}
+              onChange={(v) => update((d) => (d.preferences.willingToTravel = v))}
+            />
+            <SelectField label="Remote preference" value={profile.preferences.remotePreference}
+              onChange={(v) => update((d) => (d.preferences.remotePreference = v as typeof d.preferences.remotePreference))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "remote", label: "Remote" },
+                { value: "hybrid", label: "Hybrid" },
+                { value: "onsite", label: "Onsite" },
+              ]} />
+          </Section>
+
+          <Section title="References">
+            {profile.references.length === 0 && (
+              <p className="col-span-2 mb-2 text-sm text-gray-400">
+                No references yet. Only filled when a form asks for them.
+              </p>
+            )}
+            {profile.references.map((ref, i) => (
+              <ReferenceEntry
+                key={i}
+                reference={ref}
+                index={i}
+                onUpdate={(patch) => update((d) => Object.assign(d.references[i], patch))}
+                onRemove={() => update((d) => d.references.splice(i, 1))}
+              />
+            ))}
+            <button
+              type="button"
+              onClick={() => update((d) => d.references.push(blankReference()))}
+              className="col-span-2 mt-1 text-left text-sm text-blue-600 hover:underline"
+            >
+              + Add reference
+            </button>
           </Section>
 
           <div className="flex items-center gap-3">
@@ -407,4 +470,43 @@ function blankExperience(): Experience {
 }
 function blankEducation(): Education {
   return { school: "", degree: "", major: "", gpa: null, year: "" };
+}
+function blankReference(): Reference {
+  return { name: "", relationship: "", company: "", email: "", phone: "" };
+}
+
+// ---------------------------------------------------------------------------
+// Reference entry row
+// ---------------------------------------------------------------------------
+
+interface ReferenceEntryProps {
+  reference: Reference;
+  index: number;
+  onUpdate: (patch: Partial<Reference>) => void;
+  onRemove: () => void;
+}
+
+function ReferenceEntry({ reference, index, onUpdate, onRemove }: ReferenceEntryProps) {
+  return (
+    <div className="col-span-2 mb-4 rounded-md border border-gray-200 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-xs font-medium text-gray-500">Reference {index + 1}</span>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-xs text-red-500 hover:underline"
+          aria-label={`Remove reference ${index + 1}`}
+        >
+          Remove
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <TextField label="Name" value={reference.name} onChange={(v) => onUpdate({ name: v })} />
+        <TextField label="Relationship" value={reference.relationship} onChange={(v) => onUpdate({ relationship: v })} />
+        <TextField label="Company" value={reference.company} onChange={(v) => onUpdate({ company: v })} />
+        <TextField label="Reference email" type="email" value={reference.email} onChange={(v) => onUpdate({ email: v })} />
+        <TextField label="Reference phone" type="tel" value={reference.phone} onChange={(v) => onUpdate({ phone: v })} />
+      </div>
+    </div>
+  );
 }

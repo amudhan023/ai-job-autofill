@@ -43,6 +43,32 @@ export function CheckField({ label, checked, onChange }: CheckFieldProps) {
   );
 }
 
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: Array<{ value: string; label: string }>;
+}
+
+export function SelectField({ label, value, onChange, options }: SelectFieldProps) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-medium text-gray-600">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 export function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mb-6">

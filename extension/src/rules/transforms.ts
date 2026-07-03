@@ -16,6 +16,13 @@ export function toFullName(value: unknown): string {
   return [p.firstName?.trim(), p.lastName?.trim()].filter(Boolean).join(" ");
 }
 
+/** Preferred/display name; falls back to the full name when not set. */
+export function toPreferredName(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  const p = value as { preferredName?: string };
+  return p.preferredName?.trim() || toFullName(value);
+}
+
 /** Combines personal.location.city + .state into "City, State" format. */
 export function toCityState(value: unknown): string {
   if (!value || typeof value !== "object") return "";

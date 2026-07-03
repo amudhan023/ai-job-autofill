@@ -268,4 +268,11 @@ service. They work; they get extended, not replaced.
   conditional fields incrementally. Cross-origin iframes remain covered by
   the frame's own content-script instance (`all_frames`); closed shadow
   roots are unreachable by design.
-- [ ] M3 – M6 — not started.
+- [x] **M3** — landed: profile schema expansion in `shared/profile.ts`
+  (middle/preferred name, street address lines, security clearance,
+  willing-to-travel, references) with `migrateProfile` deep-merge migration
+  on load (`storage/profile.ts`); matching rules incl. reference contact
+  fields that beat the generic email/phone rules; options-UI editors
+  (address, visa/clearance selects, references list); backend Pydantic
+  mirror updated.
+- [ ] M4 – M6 — not started.

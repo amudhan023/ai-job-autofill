@@ -1,13 +1,17 @@
 import type { UserProfile } from "@/shared/profile";
-import { emptyProfile } from "@/shared/profile";
+import { emptyProfile, migrateProfile } from "@/shared/profile";
 
 const PROFILE_KEY = "userProfile";
 
-/** Load the profile from chrome.storage.local, or a blank one if unset. */
+/**
+ * Load the profile from chrome.storage.local, or a blank one if unset.
+ * Stored profiles from older extension versions are migrated on read:
+ * fields added by newer schemas are filled with blank defaults.
+ */
 export async function loadProfile(): Promise<UserProfile> {
   const stored = await chrome.storage.local.get(PROFILE_KEY);
-  const value = stored[PROFILE_KEY] as UserProfile | undefined;
-  return value ?? emptyProfile();
+  const value = stored[PROFILE_KEY];
+  return value ? migrateProfile(value) : emptyProfile();
 }
 
 /** Persist the profile to chrome.storage.local. */

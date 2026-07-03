@@ -2,6 +2,7 @@ import type { FieldRule } from "@/shared/types";
 import {
   boolToYesNo,
   toFullName,
+  toPreferredName,
   toCityState,
   joinList,
   visaToCitizenship,
@@ -25,10 +26,12 @@ import {
  */
 export const FIELD_RULES: FieldRule[] = [
   // --- Name fields ---
-  // fullName must come before firstName/lastName so "Full Name", "Preferred Full
-  // Name" and "Legal Full Name" all resolve to firstName + lastName combined.
-  { id: "fullName", patterns: [/full.?name/i, /preferred.?name/i, /legal.?name/i, /candidate.?name/i, /applicant.?name/i, /^(your\s+)?name$/i], profile: "personal", type: "text", transform: toFullName, autocomplete: ["name"] },
+  // preferredName and fullName must come before firstName/lastName so
+  // "Preferred Name" / "Full Name" / "Legal Full Name" resolve correctly.
+  { id: "preferredName", patterns: [/preferred.?name/i, /\bnickname\b/i, /known.?as/i, /display.?name/i], profile: "personal", type: "text", transform: toPreferredName, autocomplete: ["nickname"] },
+  { id: "fullName", patterns: [/full.?name/i, /legal.?name/i, /candidate.?name/i, /applicant.?name/i, /^(your\s+)?name$/i], profile: "personal", type: "text", transform: toFullName, autocomplete: ["name"] },
   { id: "firstName", patterns: [/first.?name/i, /given.?name/i, /\bforename\b/i], profile: "personal.firstName", type: "text", autocomplete: ["given-name"] },
+  { id: "middleName", patterns: [/middle.?(name|initial)/i], profile: "personal.middleName", type: "text", autocomplete: ["additional-name"] },
   { id: "lastName", patterns: [/last.?name/i, /family.?name/i, /surname/i], profile: "personal.lastName", type: "text", autocomplete: ["family-name"] },
 
   // --- Contact ---
@@ -42,6 +45,9 @@ export const FIELD_RULES: FieldRule[] = [
 
   // --- Location: combined "City, State" must come before individual city/state rules ---
   { id: "cityState", patterns: [/city[,\s/]+state/i, /location.*city|city.*location/i], profile: "personal.location", type: "text", transform: toCityState },
+  // Street rules are anchored/specific so "Email Address" never matches.
+  { id: "street", patterns: [/street.?address/i, /address.?line.?1/i, /^(home\s|mailing\s|current\s|present\s|street\s)?address\s*:?\*?$/i, /\bstreet\b/i], profile: "personal.location.street", type: "text", autocomplete: ["street-address", "address-line1"] },
+  { id: "street2", patterns: [/address.?line.?2/i, /apartment|\bapt\b|\bsuite\b|\bunit\b/i], profile: "personal.location.street2", type: "text", autocomplete: ["address-line2"] },
   { id: "city", patterns: [/\bcity\b|\btown\b|municipality/i], profile: "personal.location.city", type: "text", autocomplete: ["address-level2"] },
   { id: "state", patterns: [/\bstate\b|\bprovince\b|\bregion\b/i], profile: "personal.location.state", type: "text", autocomplete: ["address-level1"] },
   { id: "country", patterns: [/country/i], profile: "personal.location.country", type: "text", autocomplete: ["country", "country-name"] },
@@ -61,6 +67,7 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "salary", patterns: [/salary|compensation|expected.?pay|ctc/i, /desired.?(pay|salary)|pay.?expectation/i], profile: "preferences.salaryExpected", type: "text", flags: ["confirm"] },
   { id: "noticePeriod", patterns: [/notice.?period|availab|start.?date|when.?can.?you.?start/i], profile: "preferences.noticePeriod", type: "text", flags: ["confirm"] },
   { id: "relocate", patterns: [/reloca/i, /willing.?to.?move/i], profile: "preferences.willingToRelocate", type: "radio", transform: boolToYesNo },
+  { id: "travel", patterns: [/willing.*travel|travel.?(requirement|willingness)|able.?to.?travel|comfortable.*travel/i], profile: "preferences.willingToTravel", type: "radio", transform: boolToYesNo },
   { id: "remotePreference", patterns: [/remote.?(work|preference)/i, /work.?(remotely|from.?home)/i, /(remote|hybrid|onsite).*(preference|arrangement)/i, /work.?location.?preference/i], profile: "preferences.remotePreference", type: "select" },
 
   // --- Work Authorization ---
@@ -68,6 +75,14 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "sponsorship", patterns: [/sponsor/i, /require.*visa/i], profile: "workAuth.sponsorshipNeeded", type: "radio", transform: boolToYesNo },
   { id: "citizenship", patterns: [/citizen/i], profile: "workAuth.visaType", type: "radio", transform: visaToCitizenship },
   { id: "visaStatus", patterns: [/visa.?(status|type)|immigration.?status|work.?permit/i], profile: "workAuth.visaType", type: "text" },
+  { id: "clearance", patterns: [/security.?clearance|\bclearance\b/i], profile: "workAuth.clearance", type: "select" },
+
+  // --- References (specific patterns beat the generic email/phone rules on ties) ---
+  { id: "referenceName", patterns: [/reference.?s?\s*(full\s*)?name|name.?of.?(your.?)?reference/i], profile: "references[0].name", type: "text" },
+  { id: "referenceEmail", patterns: [/reference.?s?\s*e-?mail/i], profile: "references[0].email", type: "email" },
+  { id: "referencePhone", patterns: [/reference.?s?\s*phone/i], profile: "references[0].phone", type: "tel" },
+  { id: "referenceRelationship", patterns: [/relationship.?to.?(candidate|applicant|you)|reference.?relationship/i], profile: "references[0].relationship", type: "text" },
+  { id: "referenceCompany", patterns: [/reference.?s?\s*(company|employer|organi[sz]ation)/i], profile: "references[0].company", type: "text" },
 
   // --- Education ---
   { id: "degree", patterns: [/highest.?(education|degree)|degree/i], profile: "education[0].degree", type: "select" },
