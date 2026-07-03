@@ -37,6 +37,42 @@ export function joinList(value: unknown): string {
 }
 
 /**
+ * Dial code → representative country name, for phone country-code dropdowns.
+ * Widgets list countries by name ("United States+1", "United States (+1)"),
+ * so the name is the robust match key across ATSs. Unknown codes pass through
+ * unchanged so exact-value selects can still match.
+ */
+const DIAL_TO_COUNTRY: Record<string, string> = {
+  "+1": "United States",
+  "+44": "United Kingdom",
+  "+91": "India",
+  "+61": "Australia",
+  "+49": "Germany",
+  "+33": "France",
+  "+81": "Japan",
+  "+86": "China",
+  "+65": "Singapore",
+  "+971": "United Arab Emirates",
+  "+31": "Netherlands",
+  "+34": "Spain",
+  "+39": "Italy",
+  "+55": "Brazil",
+  "+52": "Mexico",
+};
+
+export function dialCodeToCountry(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  const code = value.trim();
+  return DIAL_TO_COUNTRY[code] ?? code;
+}
+
+/** Options for the profile page's phone-country dropdown. */
+export const PHONE_COUNTRY_OPTIONS = Object.entries(DIAL_TO_COUNTRY).map(([code, name]) => ({
+  value: code,
+  label: `${name} (${code})`,
+}));
+
+/**
  * "Are you a US citizen?" from workAuth.visaType: USC → Yes, any other known
  * status → No, unset ("") → empty string (never guess citizenship).
  */

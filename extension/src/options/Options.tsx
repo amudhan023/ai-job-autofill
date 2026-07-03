@@ -11,6 +11,7 @@ import {
 } from "@/storage/settings";
 import { BackendClient } from "@/api/client";
 import { saveResumeFile } from "@/storage/resumeFile";
+import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
 
 type Tab = "profile" | "applications" | "settings";
 
@@ -85,7 +86,12 @@ export function Options() {
               });
               setSaved(false);
             }}
-            onFileNameChange={(name) => update((d) => (d.meta.resumeFileName = name))}
+            onFileNameChange={(name) => {
+              update((d) => (d.meta.resumeFileName = name));
+              // Persist right away: resume auto-attach must work even if the
+              // user never clicks "Save profile" after uploading.
+              void persist();
+            }}
           />
 
           <Section title="Personal">
@@ -101,6 +107,9 @@ export function Options() {
               onChange={(v) => update((d) => (d.personal.email = v))} />
             <TextField label="Phone" type="tel" value={profile.personal.phone}
               onChange={(v) => update((d) => (d.personal.phone = v))} />
+            <SelectField label="Phone country code" value={profile.personal.phoneCountry}
+              onChange={(v) => update((d) => (d.personal.phoneCountry = v))}
+              options={PHONE_COUNTRY_OPTIONS} />
             <TextField label="Street address" value={profile.personal.location.street}
               onChange={(v) => update((d) => (d.personal.location.street = v))} />
             <TextField label="Apt / suite / unit" value={profile.personal.location.street2}
@@ -298,23 +307,27 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
     if (!file) return;
     setStatus("parsing");
     setErrorMsg("");
-    // Store the file bytes locally regardless of parse outcome so the
-    // content script can attach it to resume-upload fields (M6).
-    void saveResumeFile(file);
+    // Store the file bytes AND record the name immediately — resume
+    // auto-attach on application forms must not depend on the optional
+    // backend parse succeeding.
+    const stored = await saveResumeFile(file);
+    if (stored) onFileNameChange(file.name);
     const url = backendUrl ?? "http://localhost:8000";
     try {
       const client = new BackendClient(url.replace(/\/$/, ""));
       const parsed = await client.parseResume(file);
-      onFileNameChange(file.name);
       onParsed(parsed as ReturnType<typeof import("@/shared/profile").emptyProfile>);
       setStatus("done");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Parse failed";
       const isConnectionError = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("timed out");
+      const saved = stored
+        ? "Resume saved — it will still be auto-attached to applications. "
+        : "";
       setErrorMsg(
         isConnectionError
-          ? `Cannot reach backend at ${url}. Start it with: cd backend && source venv/bin/activate && uvicorn app.main:app --reload`
-          : msg,
+          ? `${saved}Profile auto-fill from the resume needs the backend: cd backend && source venv/bin/activate && uvicorn app.main:app --reload`
+          : `${saved}${msg}`,
       );
       setStatus("error");
     }

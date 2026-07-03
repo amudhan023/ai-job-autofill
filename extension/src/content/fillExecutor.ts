@@ -5,10 +5,12 @@ import { detectATS } from "@/adapters/registry";
 import type { ATSAdapter, FieldHandle } from "@/adapters/types";
 import {
   isComboboxInput,
+  popupOptionsPanel,
   setComboboxValue,
   setContentEditableValue,
   setFileValue,
   setInputValue,
+  setPopupListboxValue,
   setRadioOrCheckbox,
   setSelectValue,
 } from "@/adapters/domFill";
@@ -77,7 +79,7 @@ export async function detectAndFill(
     lastHandles.set(handle.discovered.fieldId, handle);
     const match = evaluateField(handle.discovered, profile);
     matches.push(match);
-    if (shouldWrite(match) && (await tryWrite(handle, match))) filled++;
+    if (await writeMatch(handle, match)) filled++;
   }
 
   // Post-fill settle window: only worth watching when we actually wrote
@@ -133,7 +135,7 @@ function fillLateFields(
         lastHandles.set(handle.discovered.fieldId, handle);
         const match = evaluateField(handle.discovered, profile);
         matches.push(match);
-        if (shouldWrite(match) && (await tryWrite(handle, match))) extra++;
+        if (await writeMatch(handle, match)) extra++;
       }
       scanning = false;
     };
@@ -175,26 +177,37 @@ function hasExistingValue(handle: FieldHandle): boolean {
   return (element.textContent ?? "").trim().length > 0;
 }
 
-/** Skip-aware write: respects existing values, then dispatches by widget type. */
-async function tryWrite(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
-  if (match.value === null) return false;
+/** Top-level write decision for one evaluated field. */
+async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+  // Resume attachment: gated on the stored file itself, not on the profile's
+  // resumeFileName mirror — the bytes ARE the profile value for this field
+  // (a missing upload still means no fill, preserving the no-blank-fill rule).
+  if (match.ruleId === "resumeUpload" && handle.discovered.type === "file") {
+    return attachResume(handle, match);
+  }
+  if (!shouldWrite(match)) return false;
   if (hasExistingValue(handle)) {
     match.reason = "Already has a value — left untouched.";
     return false;
   }
-  // Resume attachment (M6): the match value is only the stored file NAME;
-  // the actual bytes come from local resume storage.
-  if (match.ruleId === "resumeUpload" && handle.discovered.type === "file") {
-    const file = await loadResumeFile();
-    if (!file) {
-      match.reason = "Resume field found — upload your resume in Options to auto-attach.";
-      return false;
-    }
-    const ok = setFileValue(handle.element as HTMLInputElement, file);
-    match.reason = ok ? `Attached ${file.name}.` : "Could not attach the resume file.";
-    return ok;
+  return writeField(handle, match.value as string);
+}
+
+/** Attach the locally stored resume to a Resume/CV file input. */
+async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+  if (hasExistingValue(handle)) {
+    match.reason = "Already has a file attached — left untouched.";
+    return false;
   }
-  return writeField(handle, match.value);
+  const file = await loadResumeFile();
+  if (!file) {
+    match.reason = "Resume field found — upload your resume in Options to auto-attach.";
+    return false;
+  }
+  const ok = setFileValue(handle.element as HTMLInputElement, file);
+  match.reason = ok ? `Attached ${file.name}.` : "Could not attach the resume file.";
+  if (ok) match.value = file.name; // truthful popup summary
+  return ok;
 }
 
 /** Write a single resolved value to its control using type-appropriate logic. */
@@ -214,6 +227,9 @@ async function writeField(handle: FieldHandle, value: string): Promise<boolean> 
   }
   if (tag === "SELECT") {
     return setSelectValue(element as HTMLSelectElement, value);
+  }
+  if (popupOptionsPanel(element)) {
+    return setPopupListboxValue(element, value);
   }
   if (tag === "INPUT" && isComboboxInput(element)) {
     return setComboboxValue(element as HTMLInputElement, value);

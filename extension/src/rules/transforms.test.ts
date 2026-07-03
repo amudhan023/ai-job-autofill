@@ -57,3 +57,19 @@ describe("toCityState", () => {
     expect(toCityState("Austin")).toBe("");
   });
 });
+
+describe("dialCodeToCountry", () => {
+  it("maps common dial codes to country names", async () => {
+    const { dialCodeToCountry } = await import("./transforms");
+    expect(dialCodeToCountry("+1")).toBe("United States");
+    expect(dialCodeToCountry("+44")).toBe("United Kingdom");
+    expect(dialCodeToCountry("+91")).toBe("India");
+  });
+
+  it("passes unknown codes through and blanks empty input", async () => {
+    const { dialCodeToCountry } = await import("./transforms");
+    expect(dialCodeToCountry("+999")).toBe("+999");
+    expect(dialCodeToCountry("")).toBe("");
+    expect(dialCodeToCountry(null)).toBe("");
+  });
+});

@@ -75,6 +75,66 @@ export function setContentEditableValue(el: HTMLElement, value: string): void {
   el.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+/** Full pointer sequence — custom listboxes often listen on pointer/mousedown. */
+function clickSequence(el: Element): void {
+  for (const type of ["pointerdown", "mousedown", "mouseup", "click"]) {
+    el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
+  }
+}
+
+/**
+ * Popup-listbox composite (M6.1): a non-input trigger (button / div) whose
+ * aria-controls panel contains pre-rendered [role=option] items. This is how
+ * intl-tel-input renders the phone country-code picker ("Change country,
+ * selected United States (+1)") and how many design systems build select-only
+ * comboboxes. Returns the options panel, or null when `el` isn't one.
+ */
+export function popupOptionsPanel(el: HTMLElement): Element | null {
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return null;
+  if (tag !== "BUTTON" && el.getAttribute("role") !== "combobox") return null;
+  const controlsId = el.getAttribute("aria-controls");
+  if (!controlsId) return null;
+  const scope = queryScopeFor(el);
+  const panel = scope.querySelector(`[id="${CSS.escape(controlsId)}"]`);
+  if (panel?.querySelector('[role="option"]')) return panel;
+  return null;
+}
+
+/**
+ * Drive a popup listbox: open the trigger, pick the option matching `value`
+ * (exact → prefix → substring, so "United States" beats "United States Minor
+ * Outlying Islands"), and click it. Selecting an option is a value choice;
+ * the zero-mutation guarantee (never submit) is unaffected. If nothing
+ * matches, the trigger is clicked again to close the panel.
+ */
+export async function setPopupListboxValue(
+  trigger: HTMLElement,
+  value: string,
+  openWaitMs = 200,
+): Promise<boolean> {
+  const panel = popupOptionsPanel(trigger);
+  if (!panel) return false;
+
+  clickSequence(trigger); // open (also binds the widget's option listeners)
+  await delay(openWaitMs);
+
+  const wanted = value.trim().toLowerCase();
+  const options = Array.from(panel.querySelectorAll<HTMLElement>('[role="option"]'));
+  const text = (o: HTMLElement) => (o.textContent ?? "").trim().toLowerCase();
+  const match =
+    options.find((o) => text(o) === wanted) ??
+    options.find((o) => text(o).startsWith(wanted)) ??
+    options.find((o) => text(o).includes(wanted));
+
+  if (!match) {
+    clickSequence(trigger); // close — never leave a panel dangling open
+    return false;
+  }
+  clickSequence(match);
+  return true;
+}
+
 /** True when an input is the text entry of an ARIA combobox (react-select & co). */
 export function isComboboxInput(el: HTMLElement): boolean {
   if (el.tagName !== "INPUT") return false;
@@ -102,12 +162,7 @@ export async function setComboboxValue(
   await delay(optionWaitMs);
 
   const option = findComboboxOption(el, value);
-  if (option) {
-    // Full pointer sequence — many custom listboxes listen on mousedown.
-    for (const type of ["pointerdown", "mousedown", "mouseup", "click"]) {
-      option.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
-    }
-  }
+  if (option) clickSequence(option);
   return true;
 }
 

@@ -24,6 +24,7 @@ class PersonalInfo(BaseModel):
     preferredName: str = ""
     email: str = ""
     phone: str = ""
+    phoneCountry: str = "+1"
     location: Location = Field(default_factory=Location)
 
 

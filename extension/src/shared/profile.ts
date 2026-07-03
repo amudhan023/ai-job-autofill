@@ -24,6 +24,8 @@ export interface PersonalInfo {
   preferredName: string;
   email: string;
   phone: string;
+  /** Phone dial code (e.g. "+1") for country-code dropdowns next to phone fields. */
+  phoneCountry: string;
   location: Location;
 }
 
@@ -121,6 +123,7 @@ export function emptyProfile(): UserProfile {
       preferredName: "",
       email: "",
       phone: "",
+      phoneCountry: "+1",
       location: { street: "", street2: "", city: "", state: "", country: "", postalCode: "" },
     },
     links: { linkedin: "", github: "", portfolio: "", website: "" },

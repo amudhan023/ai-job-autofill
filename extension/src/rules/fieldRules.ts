@@ -4,6 +4,7 @@ import {
   toFullName,
   toPreferredName,
   toCityState,
+  dialCodeToCountry,
   joinList,
   visaToCitizenship,
 } from "./transforms";
@@ -36,6 +37,10 @@ export const FIELD_RULES: FieldRule[] = [
 
   // --- Contact ---
   { id: "email", patterns: [/e-?mail/i], profile: "personal.email", type: "email", autocomplete: ["email"] },
+  // phoneCountry must come before phone and country: the dial-code dropdown
+  // next to a phone field (intl-tel-input's "Change country, selected …"
+  // button, "Country code" selects) must not resolve to either generic rule.
+  { id: "phoneCountry", patterns: [/country.?code/i, /phone.*country|country.*phone/i, /dial.?code/i, /change country/i, /selected country/i], profile: "personal.phoneCountry", type: "select", transform: dialCodeToCountry, autocomplete: ["tel-country-code"] },
   { id: "phone", patterns: [/phone|mobile|cell|telephone/i, /contact.?number/i], profile: "personal.phone", type: "tel", autocomplete: ["tel", "tel-national", "tel-local"] },
 
   // --- Links ---

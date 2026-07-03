@@ -1,6 +1,6 @@
 import type { FieldHandle } from "./types";
 import { inferType } from "./types";
-import { labelForControl } from "./domFill";
+import { labelForControl, popupOptionsPanel } from "./domFill";
 import type { DiscoveredField } from "@/rules/engine";
 
 let idCounter = 0;
@@ -21,6 +21,10 @@ const CONTROL_SELECTOR = [
   '[contenteditable="true"]',
   '[contenteditable="plaintext-only"]',
   '[role="textbox"]:not(input):not(textarea)',
+  // Popup-listbox triggers (intl-tel-input country picker, select-only
+  // comboboxes); kept only when their panel has pre-rendered options.
+  "button[aria-controls]",
+  '[role="combobox"]:not(input):not(select)',
 ].join(", ");
 
 /**
@@ -86,6 +90,14 @@ export function discoverWithin(root: ParentNode = document): FieldHandle[] {
     ).filter(isFillable);
 
     for (const el of controls) {
+      // Non-input triggers must prove they're a fillable listbox composite —
+      // otherwise every menu button on the page would become a "field".
+      if (
+        (el.tagName === "BUTTON" || (el.tagName !== "INPUT" && el.getAttribute("role") === "combobox")) &&
+        !popupOptionsPanel(el)
+      ) {
+        continue;
+      }
       if (isRadioOrCheckbox(el)) {
         const key = `${rootIndex}::${el.name || labelForControl(el)}`;
         const list = radioGroups.get(key) ?? [];

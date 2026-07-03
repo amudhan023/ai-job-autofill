@@ -43,6 +43,11 @@ export function inferType(el: HTMLElement): FieldType {
   // iframes belong to a different realm, where instanceof always fails.
   if (el.tagName === "TEXTAREA") return "textarea";
   if (el.tagName === "SELECT") return "select";
+  // Popup-listbox triggers (button/div + aria-controls options panel) behave
+  // like selects; only validated composites reach here (see discoverWithin).
+  if (el.tagName === "BUTTON" || (el.getAttribute("role") === "combobox" && el.tagName !== "INPUT")) {
+    return "select";
+  }
   // Custom text widgets (contenteditable rich text, ARIA textbox): treat
   // multiline editors as textarea, single-line ones as text.
   const editable = el.getAttribute("contenteditable");
