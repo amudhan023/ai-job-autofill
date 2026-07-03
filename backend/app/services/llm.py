@@ -52,6 +52,41 @@ class AnthropicLLM:
         return "".join(parts)
 
 
+class GeminiLLM:
+    """Google Gemini via the google-genai SDK.
+
+    The `model` argument passed by callers contains Claude model IDs
+    (e.g. "claude-sonnet-4-6"). GeminiLLM ignores it and always uses the
+    configured `gemini_model` so call-sites don't need to be changed.
+    """
+
+    def __init__(self, api_key: str, model: str) -> None:
+        self._api_key = api_key
+        self._model = model
+        self._client = None
+
+    def _ensure(self) -> object:
+        if self._client is None:
+            from google import genai  # lazy
+
+            self._client = genai.Client(api_key=self._api_key)
+        return self._client
+
+    def complete(self, *, system: str, user: str, model: str, max_tokens: int = 1024) -> str:
+        client = self._ensure()
+        from google.genai import types  # lazy
+
+        response = client.models.generate_content(  # type: ignore[attr-defined]
+            model=self._model,
+            contents=user,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=max_tokens,
+            ),
+        )
+        return response.text or ""
+
+
 class VoyageEmbeddings:
     def __init__(self, api_key: str, model: str) -> None:
         self._api_key = api_key
@@ -81,9 +116,11 @@ def get_llm() -> LLM | None:
         from app.services.fakes import make_server_fake_llm  # lazy to avoid cycles
 
         return make_server_fake_llm()
-    if not settings.anthropic_api_key:
-        return None
-    return AnthropicLLM(settings.anthropic_api_key)
+    if settings.anthropic_api_key:
+        return AnthropicLLM(settings.anthropic_api_key)
+    if settings.gemini_api_key:
+        return GeminiLLM(settings.gemini_api_key, settings.gemini_model)
+    return None
 
 
 def get_embeddings() -> Embeddings | None:

@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # AI keys (optional; AI endpoints are stubbed until set).
     anthropic_api_key: str = ""
     voyage_api_key: str = ""
+    gemini_api_key: str = ""
+
+    # Default Gemini model used for all tasks when Gemini is the active provider.
+    gemini_model: str = "gemini-2.0-flash"
 
     # Deterministic fake-AI mode for integration tests / local dev without keys.
     use_fake_ai: bool = False
@@ -32,7 +36,7 @@ class Settings(BaseSettings):
 
     @property
     def ai_enabled(self) -> bool:
-        return bool(self.anthropic_api_key) or self.use_fake_ai
+        return bool(self.anthropic_api_key) or bool(self.gemini_api_key) or self.use_fake_ai
 
 
 settings = Settings()
