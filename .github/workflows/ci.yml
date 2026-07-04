@@ -36,6 +36,18 @@ jobs:
       - name: Build extension
         run: npm run build
 
+      - name: Package extension (main only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: node scripts/package.mjs
+
+      - name: Upload packaged extension
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-package
+          path: extension/release/*.zip
+          retention-days: 30
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
