@@ -27,6 +27,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Lint
+        run: npm run lint
+
       - name: Unit + component tests
         run: npm run test
 
@@ -62,6 +65,9 @@ jobs:
 
       - name: Install deps
         run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
 
       - name: Run tests
         run: python -m pytest -q

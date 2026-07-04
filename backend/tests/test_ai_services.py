@@ -6,10 +6,9 @@ import json
 from app.services.answers import AnswerRequest, generate
 from app.services.classifier import classify_keyword, classify_question, is_ai_category
 from app.services.fakes import FakeEmbeddings, FakeLLM
-from app.services.jd import extract_jd_text, skill_gap, JDExtract
+from app.services.jd import JDExtract, extract_jd_text, skill_gap
 from app.services.rag import VectorStore, chunk_resume, cosine
 from app.services.resume import parse_resume_text
-
 
 # ---- classifier ----------------------------------------------------------- #
 
@@ -99,9 +98,13 @@ def test_vector_store_retrieves_most_relevant_chunk() -> None:
 def test_generate_behavioral_answer_with_rag() -> None:
     llm = FakeLLM(default="STAR answer here.")
     store = VectorStore(embeddings=FakeEmbeddings())
-    store.add(chunk_resume([{"company": "Acme", "title": "SWE", "bullets": ["Led a team through reorg"]}]))
+    store.add(
+        chunk_resume([{"company": "Acme", "title": "SWE", "bullets": ["Led a team through reorg"]}])
+    )
     res = generate(
-        AnswerRequest(question="Describe a time you led a team through change", jd_summary="Staff role"),
+        AnswerRequest(
+            question="Describe a time you led a team through change", jd_summary="Staff role"
+        ),
         llm=llm,
         store=store,
     )

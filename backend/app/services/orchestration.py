@@ -12,12 +12,12 @@ compliance guarantee at the orchestration layer too.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from app.services.job_search import CandidateProfile, JobPosting, rank_jobs
 
 
-class StepState(str, Enum):
+class StepState(StrEnum):
     PENDING = "PENDING"
     OPENED = "OPENED"
     FILLED = "FILLED"
