@@ -69,6 +69,28 @@ describe("Popup", () => {
     expect(screen.getByText(/need.*attention/i)).toBeInTheDocument();
   });
 
+  it("explains a 0-filled result caused by fields already having values", async () => {
+    const rerunResult: FillResult = {
+      ...sampleResult,
+      filledCount: 0,
+      totalFields: 2,
+      matches: [
+        { ...sampleResult.matches[0], alreadyHadValue: true },
+        { fieldId: "3", label: "Resume", type: "file", ruleId: "resumeUpload", profilePath: "meta.resumeFileName", value: "resume.pdf", confidence: 1, tier: "high", flags: [], reason: "Already has a file attached — left untouched.", alreadyHadValue: true },
+      ],
+    };
+    respondWith((msg) => {
+      if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
+      if (msg.type === "FILL_FORM") return { ok: true, result: rerunResult };
+      return { ok: true };
+    });
+    render(<Popup />);
+    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+
+    expect(await screen.findByText(/filled 0 of 2 fields/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 already had a value/i)).toBeInTheDocument();
+  });
+
   it("always shows the never-submit assurance", async () => {
     respondWith(() => ({ ok: true, platform: "greenhouse" }));
     render(<Popup />);

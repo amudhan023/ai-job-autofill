@@ -222,6 +222,9 @@ function isCompatibleType(actual: FieldType, expected: FieldType): boolean {
   const textish: FieldType[] = ["text", "email", "tel", "url", "number"];
   if (textish.includes(actual) && textish.includes(expected)) return true;
   if (expected === "radio" && (actual === "select" || actual === "radio")) return true;
+  // A select-like control (incl. ARIA comboboxes) can take any short value by
+  // picking the matching option — don't penalize text-expecting rules on it.
+  if (actual === "select" && textish.includes(expected)) return true;
   return false;
 }
 

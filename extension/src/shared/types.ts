@@ -75,6 +75,13 @@ export interface FieldMatch {
    * Advisory only — never triggers a write.
    */
   aiCategory?: string;
+  /**
+   * True when the field already held a value (never-clobber guard skipped
+   * it) rather than having no match/value. Lets the UI distinguish "0 filled
+   * because everything was already filled" from "0 filled because nothing
+   * matched" — otherwise both look identical as "Filled 0 of N".
+   */
+  alreadyHadValue?: boolean;
 }
 
 /** Result of attempting to fill the current page. */

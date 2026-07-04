@@ -38,6 +38,40 @@ describe("Options (profile editor)", () => {
     expect(screen.getByText(/nothing is\s+uploaded/i)).toBeInTheDocument();
   });
 
+  it("renders voluntary disclosures (EEO) fields and never-auto-filled note", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    expect(screen.getByText("Voluntary Disclosures (Optional)")).toBeInTheDocument();
+    expect(screen.getByLabelText("Age range")).toBeInTheDocument();
+    expect(screen.getByLabelText("Gender")).toBeInTheDocument();
+    expect(screen.getByLabelText("Pronouns")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Do you identify as a member of the LGBTQIA+ community?"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("White / Caucasian")).toBeInTheDocument();
+    expect(screen.getByLabelText("Hispanic or Latinx")).toBeInTheDocument();
+    expect(screen.getByText(/never auto-filled into a form/i)).toBeInTheDocument();
+  });
+
+  it("toggles a race/ethnicity checkbox and persists the multi-select on save", async () => {
+    render(<Options />);
+    await screen.findByText("Your Profile");
+
+    await userEvent.click(screen.getByLabelText("Asian"));
+    await userEvent.click(screen.getByLabelText("White / Caucasian"));
+    await userEvent.selectOptions(screen.getByLabelText("Gender"), "Non-binary");
+
+    await userEvent.click(screen.getByRole("button", { name: /save profile/i }));
+
+    await waitFor(async () => {
+      const stored = (await storedProfile()) as {
+        userProfile?: { demographics: { raceEthnicity: string[]; gender: string } };
+      };
+      expect(stored.userProfile?.demographics.raceEthnicity).toEqual(["Asian", "White / Caucasian"]);
+      expect(stored.userProfile?.demographics.gender).toBe("Non-binary");
+    });
+  });
+
   it("edits a field and persists it to chrome.storage.local on save", async () => {
     render(<Options />);
     await screen.findByText("Your Profile");

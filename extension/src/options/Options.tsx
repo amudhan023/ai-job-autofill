@@ -246,6 +246,76 @@ export function Options() {
               ]} />
           </Section>
 
+          <Section title="Voluntary Disclosures (Optional)">
+            <p className="col-span-2 -mt-1 mb-1 text-xs text-gray-500">
+              Entirely optional and stored on this device only — never synced anywhere. Even when
+              filled in, these are never auto-filled into a form; Autofill only detects and shows
+              the matching question so you can answer it yourself with one click.
+            </p>
+            <SelectField label="Age range" value={profile.demographics.ageRange}
+              onChange={(v) => update((d) => (d.demographics.ageRange = v))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "17 or younger", label: "17 or younger" },
+                { value: "18-20", label: "18-20" },
+                { value: "21-29", label: "21-29" },
+                { value: "30-39", label: "30-39" },
+                { value: "40-49", label: "40-49" },
+                { value: "50-59", label: "50-59" },
+                { value: "60 or older", label: "60 or older" },
+                { value: "Prefer not to answer", label: "Prefer not to answer" },
+              ]} />
+            <SelectField label="Gender" value={profile.demographics.gender}
+              onChange={(v) => update((d) => (d.demographics.gender = v))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "Female", label: "Female" },
+                { value: "Male", label: "Male" },
+                { value: "Non-binary", label: "Non-binary" },
+                { value: "Prefer not to answer", label: "Prefer not to answer" },
+              ]} />
+            <SelectField label="Pronouns" value={profile.demographics.pronouns}
+              onChange={(v) => update((d) => (d.demographics.pronouns = v))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "she/her", label: "she/her" },
+                { value: "he/him", label: "he/him" },
+                { value: "they/them", label: "they/them" },
+                { value: "Other", label: "Other" },
+                { value: "Prefer not to answer", label: "Prefer not to answer" },
+              ]} />
+            <SelectField label="Do you identify as a member of the LGBTQIA+ community?"
+              value={profile.demographics.lgbtqia}
+              onChange={(v) => update((d) => (d.demographics.lgbtqia = v))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "Yes", label: "Yes" },
+                { value: "No", label: "No" },
+                { value: "Prefer not to answer", label: "Prefer not to answer" },
+              ]} />
+            <div className="col-span-2">
+              <span className="mb-1 block text-xs font-medium text-gray-600">
+                Racial, ethnic and origin identities (select all that apply)
+              </span>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                {RACE_ETHNICITY_OPTIONS.map((option) => (
+                  <CheckField
+                    key={option}
+                    label={option}
+                    checked={profile.demographics.raceEthnicity.includes(option)}
+                    onChange={(checked) =>
+                      update((d) => {
+                        d.demographics.raceEthnicity = checked
+                          ? [...d.demographics.raceEthnicity, option]
+                          : d.demographics.raceEthnicity.filter((o) => o !== option);
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          </Section>
+
           <Section title="References">
             {profile.references.length === 0 && (
               <p className="col-span-2 mb-2 text-sm text-gray-400">
@@ -506,6 +576,18 @@ function blankEducation(): Education {
 function blankReference(): Reference {
   return { name: "", relationship: "", company: "", email: "", phone: "" };
 }
+
+const RACE_ETHNICITY_OPTIONS = [
+  "White / Caucasian",
+  "Hispanic or Latinx",
+  "Black or African American",
+  "Asian",
+  "Native Hawaiian or other Pacific Islander",
+  "Indigenous Peoples, First Nations, Native American, or Alaska Native",
+  "Middle Eastern or North African",
+  "A race, ethnicity, or origin not shown",
+  "Prefer not to answer",
+];
 
 // ---------------------------------------------------------------------------
 // Reference entry row

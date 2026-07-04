@@ -46,6 +46,44 @@ describe("detectAndFill (integration)", () => {
     expect((document.getElementById("sal") as HTMLInputElement).value).toBe("");
   });
 
+  it("does NOT auto-fill voluntary EEO questions even when the profile has an answer", async () => {
+    document.body.innerHTML = `
+      <form id="application_form" class="greenhouse-application">
+        <fieldset>
+          <legend>What gender do you identify as?</legend>
+          <label><input type="radio" name="gender" value="Female" /> Female</label>
+          <label><input type="radio" name="gender" value="Male" /> Male</label>
+          <label><input type="radio" name="gender" value="Non-binary" /> Non-binary</label>
+        </fieldset>
+      </form>`;
+    const p = emptyProfile();
+    p.demographics.gender = "Non-binary";
+
+    await detectAndFill(p, NO_SETTLE);
+
+    const radios = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="gender"]'));
+    expect(radios.every((r) => !r.checked)).toBe(true);
+  });
+
+  it("flags already-filled fields distinctly from unmatched ones on a re-run", async () => {
+    greenhouseForm();
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.personal.email = "a@example.com";
+
+    // First pass: writes real values.
+    const first = await detectAndFill(p, NO_SETTLE);
+    expect(first.filledCount).toBeGreaterThan(0);
+
+    // Second pass (e.g. user clicks Autofill again): never-clobber guard skips
+    // everything that already has a value — filledCount is 0, but that's
+    // "nothing new to fill", not "nothing matched".
+    const second = await detectAndFill(p, NO_SETTLE);
+    expect(second.filledCount).toBe(0);
+    const firstName = second.matches.find((m) => m.ruleId === "firstName");
+    expect(firstName?.alreadyHadValue).toBe(true);
+  });
+
   it("does NOT fill free-text AI fields like cover letter", async () => {
     greenhouseForm();
     const p = emptyProfile();

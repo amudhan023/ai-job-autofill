@@ -24,6 +24,12 @@ export interface ChromeMock {
   tabs: {
     query: ReturnType<typeof vi.fn>;
     sendMessage: ReturnType<typeof vi.fn>;
+    onActivated: { addListener: ReturnType<typeof vi.fn>; removeListener: ReturnType<typeof vi.fn> };
+    onUpdated: { addListener: ReturnType<typeof vi.fn>; removeListener: ReturnType<typeof vi.fn> };
+  };
+  sidePanel: {
+    setPanelBehavior: ReturnType<typeof vi.fn>;
+    setOptions: ReturnType<typeof vi.fn>;
   };
 }
 
@@ -61,6 +67,12 @@ export function createChromeMock(): ChromeMock {
     tabs: {
       query: vi.fn(async () => [{ id: 1 }]),
       sendMessage: vi.fn(async () => ({ ok: true })),
+      onActivated: { addListener: vi.fn(), removeListener: vi.fn() },
+      onUpdated: { addListener: vi.fn(), removeListener: vi.fn() },
+    },
+    sidePanel: {
+      setPanelBehavior: vi.fn(async () => undefined),
+      setOptions: vi.fn(async () => undefined),
     },
   };
 }

@@ -121,7 +121,10 @@ function onPossibleNavigation(): void {
   lastHref = location.href;
   if (navTimer) clearTimeout(navTimer);
   // Let the SPA render the new step before scanning.
-  navTimer = setTimeout(() => void maybeAutoFill(), NAV_DEBOUNCE_MS);
+  navTimer = setTimeout(() => {
+    void maybeAutoFill();
+    reportPageStatus(); // re-check: a wizard step can lose/gain its form
+  }, NAV_DEBOUNCE_MS);
 }
 
 function installNavigationWatcher(): void {
@@ -143,6 +146,18 @@ async function resumeSessionOnLoad(): Promise<void> {
   }, 1000);
 }
 
+/**
+ * Tell the background worker whether THIS tab has something fillable, so it
+ * can enable the side panel only here rather than on every open tab (M7
+ * follow-up) — each tab's panel then reflects that tab's own application.
+ */
+function reportPageStatus(): void {
+  const { platform } = detectOnly();
+  void chrome.runtime
+    .sendMessage({ type: "REPORT_PAGE_STATUS", hasForm: platform !== "unknown" })
+    .catch(() => {});
+}
+
 installNavigationWatcher();
 void resumeSessionOnLoad();
 // Extra detection fingerprints from remote config (hot-updatable, additive).
@@ -150,3 +165,4 @@ void loadAdapterConfig().then(applyRemoteHints).catch(() => {});
 
 // Announce presence on load (helps the popup know the content script is live).
 void chrome.runtime.sendMessage({ type: "CONTENT_READY", url: location.href }).catch(() => {});
+reportPageStatus();

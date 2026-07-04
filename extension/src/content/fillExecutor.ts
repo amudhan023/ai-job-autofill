@@ -188,6 +188,7 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
   if (!shouldWrite(match)) return false;
   if (hasExistingValue(handle)) {
     match.reason = "Already has a value — left untouched.";
+    match.alreadyHadValue = true;
     return false;
   }
   return writeField(handle, match.value as string);
@@ -197,6 +198,7 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
 async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
   if (hasExistingValue(handle)) {
     match.reason = "Already has a file attached — left untouched.";
+    match.alreadyHadValue = true;
     return false;
   }
   const file = await loadResumeFile();
@@ -206,7 +208,14 @@ async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boo
   }
   const ok = setFileValue(handle.element as HTMLInputElement, file);
   match.reason = ok ? `Attached ${file.name}.` : "Could not attach the resume file.";
-  if (ok) match.value = file.name; // truthful popup summary
+  if (ok) {
+    // Truthful popup summary: show the attached file with a green badge —
+    // the engine-computed confidence was 0 whenever the profile mirror
+    // (meta.resumeFileName) was empty, which no longer gates attachment.
+    match.value = file.name;
+    match.confidence = 0.95;
+    match.tier = "high";
+  }
   return ok;
 }
 

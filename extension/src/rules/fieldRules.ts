@@ -21,9 +21,14 @@ import {
  * `profile` is a dot-path into UserProfile; `null` marks free-text fields that
  * are left for the user / AI rather than filled deterministically.
  *
- * Legal/sensitive fields (SSN, EIN, DOB, EEO) are intentionally absent and
- * additionally hard-blocked by BLOCKLIST_PATTERNS below — they must never be
- * auto-filled.
+ * Identity documents / legal history (SSN, EIN, DOB, driver's license,
+ * criminal history) and disability/veteran status are intentionally absent
+ * and additionally hard-blocked by BLOCKLIST_PATTERNS below — they must never
+ * be auto-filled. Voluntary EEO self-ID (age range, race/ethnicity, gender,
+ * pronouns, LGBTQIA+) *is* matched below, but every such rule carries the
+ * "confirm" flag — see shouldWrite() in content/fillExecutor.ts — so it is
+ * only ever detected and surfaced for the user's own review, never written to
+ * the page automatically.
  */
 export const FIELD_RULES: FieldRule[] = [
   // --- Name fields ---
@@ -40,7 +45,9 @@ export const FIELD_RULES: FieldRule[] = [
   // phoneCountry must come before phone and country: the dial-code dropdown
   // next to a phone field (intl-tel-input's "Change country, selected …"
   // button, "Country code" selects) must not resolve to either generic rule.
-  { id: "phoneCountry", patterns: [/country.?code/i, /phone.*country|country.*phone/i, /dial.?code/i, /change country/i, /selected country/i], profile: "personal.phoneCountry", type: "select", transform: dialCodeToCountry, autocomplete: ["tel-country-code"] },
+  // intl-tel-input labels its trigger "Select country" before a choice is
+  // made and "Change country, selected …" after — match both phrasings.
+  { id: "phoneCountry", patterns: [/country.?code/i, /phone.*country|country.*phone/i, /dial.?code/i, /change country/i, /select(ed)?.?country/i], profile: "personal.phoneCountry", type: "select", transform: dialCodeToCountry, autocomplete: ["tel-country-code"] },
   { id: "phone", patterns: [/phone|mobile|cell|telephone/i, /contact.?number/i], profile: "personal.phone", type: "tel", autocomplete: ["tel", "tel-national", "tel-local"] },
 
   // --- Links ---
@@ -81,6 +88,17 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "citizenship", patterns: [/citizen/i], profile: "workAuth.visaType", type: "radio", transform: visaToCitizenship },
   { id: "visaStatus", patterns: [/visa.?(status|type)|immigration.?status|work.?permit/i], profile: "workAuth.visaType", type: "text" },
   { id: "clearance", patterns: [/security.?clearance|\bclearance\b/i], profile: "workAuth.clearance", type: "select" },
+
+  // --- Voluntary EEO self-identification ---
+  // Optional, stored locally only (see Demographics in shared/profile.ts).
+  // Every rule here is "confirm"-flagged: the engine detects and surfaces a
+  // value but never writes it to the page automatically (see shouldWrite() in
+  // content/fillExecutor.ts) — same treatment as salary/notice period above.
+  { id: "ageRange", patterns: [/age.?range/i, /what.?is.?your.?age/i, /\bage\b/i], profile: "demographics.ageRange", type: "radio", flags: ["confirm"] },
+  { id: "raceEthnicity", patterns: [/racial.*ethnic|race.*ethnic|ethnic.*race/i, /\brace\b/i, /ethnicit/i], profile: "demographics.raceEthnicity", type: "checkbox", transform: joinList, flags: ["confirm"] },
+  { id: "gender", patterns: [/gender.?identity/i, /what.?gender.*identify/i, /\bgender\b/i], profile: "demographics.gender", type: "radio", flags: ["confirm"] },
+  { id: "pronouns", patterns: [/pronoun/i], profile: "demographics.pronouns", type: "radio", flags: ["confirm"] },
+  { id: "lgbtqia", patterns: [/lgbtq/i, /lgbt\+/i, /member.*lgbtq/i, /sexual.?orientation/i], profile: "demographics.lgbtqia", type: "radio", flags: ["confirm"] },
 
   // --- References (specific patterns beat the generic email/phone rules on ties) ---
   { id: "referenceName", patterns: [/reference.?s?\s*(full\s*)?name|name.?of.?(your.?)?reference/i], profile: "references[0].name", type: "text" },
@@ -138,8 +156,11 @@ export const BLOCKLIST_PATTERNS: RegExp[] = [
   /date.?of.?birth|birth.?date|\bdob\b/i,
   /driver.?s?\s?licen[cs]e/i,
   /criminal|conviction|felony|misdemeanor/i,
-  // Diversity questions are user-only; never AI-generated or auto-filled.
-  /\brace\b|ethnicit|\bgender\b|disabilit|veteran|sexual.?orientation|pronoun/i,
+  // Disability/veteran status weren't requested as supported fields — still
+  // hard-blocked. Age/race/ethnicity/gender/pronouns/LGBTQIA+ are NOT blocked
+  // here: they're matched by the confirm-flagged rules above instead, so they
+  // still can't be auto-written but do show a reviewable value in the popup.
+  /disabilit|veteran/i,
 ];
 
 export function isBlocked(label: string): boolean {

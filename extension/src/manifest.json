@@ -3,7 +3,7 @@
   "name": "AI Job Autofill",
   "version": "0.1.0",
   "description": "Privacy-first autofill for job applications. Deterministic first, AI-assisted, you stay in control.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "sidePanel"],
   "host_permissions": [
     "https://boards.greenhouse.io/*",
     "https://job-boards.greenhouse.io/*",
@@ -42,8 +42,10 @@
     }
   ],
   "action": {
-    "default_popup": "src/popup/index.html",
-    "default_title": "AI Job Autofill"
+    "default_title": "AI Job Autofill — click to open the side panel"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
   },
   "commands": {
     "autofill": {

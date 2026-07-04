@@ -55,12 +55,39 @@ export function Popup() {
   const [filling, setFilling] = useState(false);
 
   useEffect(() => {
-    void sendToActiveTab({ type: "GET_PAGE_STATUS" }).then((res) => {
-      if (res && res.ok && "platform" in res) {
-        setPlatform(res.platform);
-        setSession(res.session);
-      } else setPlatform("unscanned");
-    });
+    let cancelled = false;
+
+    const refresh = () => {
+      // A previous tab's fill summary is meaningless once we're looking at a
+      // different tab/page — clear it while the new status loads.
+      setPlatform("loading");
+      setResult(null);
+      void sendToActiveTab({ type: "GET_PAGE_STATUS" }).then((res) => {
+        if (cancelled) return;
+        if (res && res.ok && "platform" in res) {
+          setPlatform(res.platform);
+          setSession(res.session);
+        } else setPlatform("unscanned");
+      });
+    };
+
+    refresh();
+
+    // Rendered in a side panel (M7), this component stays mounted across tab
+    // switches and page navigations instead of remounting per-open like the
+    // old popup did — so it has to re-detect on those events itself. Harmless
+    // no-ops in a classic popup, which unmounts before either would fire.
+    const onActivated = () => refresh();
+    const onUpdated = (_tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      if (changeInfo.status === "complete") refresh();
+    };
+    chrome.tabs.onActivated.addListener(onActivated);
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    return () => {
+      cancelled = true;
+      chrome.tabs.onActivated.removeListener(onActivated);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+    };
   }, []);
 
   const onFill = async () => {
@@ -146,19 +173,32 @@ function PlatformStatus({ platform }: { platform: PageState }) {
 
 function FillSummary({ result }: { result: FillResult }) {
   const attention = result.matches.filter((m) => m.value === null || m.tier === "low");
+  const alreadyFilled = result.matches.filter((m) => m.alreadyHadValue).length;
   return (
     <div className="mt-4 border-t pt-3">
       <p className="mb-2 font-medium">
         Filled {result.filledCount} of {result.totalFields} fields
+        {alreadyFilled > 0 && (
+          <span className="font-normal text-gray-500">
+            {" "}
+            ({alreadyFilled} already had a value — left untouched)
+          </span>
+        )}
       </p>
-      <ul className="max-h-48 space-y-1 overflow-y-auto">
+      {/* vh-based cap (not a fixed px height): scales with whatever surface
+          renders this — a short popup or a much taller docked side panel. */}
+      <ul className="max-h-[45vh] space-y-1 overflow-y-auto">
         {result.matches.map((m: FieldMatch) => (
           <li key={m.fieldId} className="flex items-center justify-between gap-2">
             <span className="truncate" title={m.reason}>
               {m.label || "(unlabeled)"}
             </span>
             <span className="flex shrink-0 items-center gap-1">
-              {m.flags.includes("ai_generate") && <AiDraftButton fieldId={m.fieldId} />}
+              {/* No AI drafts into file inputs (e.g. a cover-letter UPLOAD
+                  matched by the coverLetter rule) — text can't go there. */}
+              {m.flags.includes("ai_generate") && m.type !== "file" && (
+                <AiDraftButton fieldId={m.fieldId} />
+              )}
               <ConfidenceBadge match={m} />
             </span>
           </li>

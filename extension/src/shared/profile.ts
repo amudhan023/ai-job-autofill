@@ -101,6 +101,21 @@ export interface ProfileMeta {
   resumeFileName?: string;
 }
 
+/**
+ * Voluntary EEO self-identification. Entirely optional, stored locally only
+ * (never synced to the backend), and — even when filled in — never
+ * auto-written to a page; see the "confirm" flag on the matching field rules
+ * in rules/fieldRules.ts. The user reviews and fills these themselves.
+ */
+export interface Demographics {
+  ageRange: string;
+  /** Multi-select — "Select all that apply". */
+  raceEthnicity: string[];
+  gender: string;
+  pronouns: string;
+  lgbtqia: string;
+}
+
 export interface UserProfile {
   personal: PersonalInfo;
   links: Links;
@@ -110,6 +125,7 @@ export interface UserProfile {
   skills: Skills;
   preferences: Preferences;
   references: Reference[];
+  demographics: Demographics;
   meta: ProfileMeta;
 }
 
@@ -142,6 +158,7 @@ export function emptyProfile(): UserProfile {
       willingToTravel: false,
     },
     references: [],
+    demographics: { ageRange: "", raceEthnicity: [], gender: "", pronouns: "", lgbtqia: "" },
     meta: { totalYearsExp: 0 },
   };
 }

@@ -38,10 +38,42 @@ describe("rule engine — basic fills", () => {
     expect(m.value).toBeNull();
   });
 
-  it("never auto-fills diversity questions", () => {
+  it("still hard-blocks disability/veteran status", () => {
     const p = emptyProfile();
-    const m = evaluateField(field({ label: "Gender Identity" }), p);
+    const m = evaluateField(field({ label: "Veteran Status" }), p);
     expect(m.flags).toContain("blocklist");
+    expect(m.value).toBeNull();
+  });
+
+  it("detects voluntary EEO fields but never auto-fills them (confirm-gated)", () => {
+    const p = emptyProfile();
+    p.demographics.gender = "Non-binary";
+    const m = evaluateField(field({ label: "Gender Identity" }), p);
+    expect(m.flags).not.toContain("blocklist");
+    expect(m.profilePath).toBe("demographics.gender");
+    expect(m.value).toBe("Non-binary");
+    expect(m.flags).toContain("confirm");
+  });
+
+  it("joins multi-select race/ethnicity answers for display", () => {
+    const p = emptyProfile();
+    p.demographics.raceEthnicity = ["Asian", "White / Caucasian"];
+    const m = evaluateField(field({ label: "Racial, ethnic and origin identities" }), p);
+    expect(m.profilePath).toBe("demographics.raceEthnicity");
+    expect(m.value).toBe("Asian, White / Caucasian");
+    expect(m.flags).toContain("confirm");
+  });
+
+  it("detects age range and pronoun questions as confirm-gated (not blocked)", () => {
+    const p = emptyProfile();
+    p.demographics.ageRange = "30-39";
+    p.demographics.pronouns = "they/them";
+    const age = evaluateField(field({ label: "What is your age range?" }), p);
+    const pronouns = evaluateField(field({ label: "What are your pronouns?" }), p);
+    expect(age.value).toBe("30-39");
+    expect(age.flags).toContain("confirm");
+    expect(pronouns.value).toBe("they/them");
+    expect(pronouns.flags).toContain("confirm");
   });
 
   it("transforms booleans to Yes/No for work authorization", () => {

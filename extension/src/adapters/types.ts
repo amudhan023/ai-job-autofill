@@ -55,6 +55,17 @@ export function inferType(el: HTMLElement): FieldType {
     return el.getAttribute("aria-multiline") === "false" ? "text" : "textarea";
   }
   if (el.tagName === "INPUT") {
+    // ARIA combobox inputs (react-select & co) pick from options — they are
+    // selects semantically, not free text. Typing them "select" lets rules
+    // that expect select/radio (work auth, "how did you hear") clear the
+    // confidence floor on Greenhouse-style dropdown questions.
+    if (
+      el.getAttribute("role") === "combobox" ||
+      el.getAttribute("aria-autocomplete") === "list" ||
+      el.closest("[role='combobox']") !== null
+    ) {
+      return "select";
+    }
     switch ((el as HTMLInputElement).type) {
       case "file":
         return "file";
