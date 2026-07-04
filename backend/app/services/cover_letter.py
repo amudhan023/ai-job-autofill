@@ -41,7 +41,9 @@ def generate_cover_letter(req: CoverLetterRequest, llm: LLM | None = None) -> Co
     client = llm or get_llm()
     style = req.style if req.style in STYLES else "formal"
     if client is None:
-        return CoverLetterResponse(letter="", model=settings.cover_letter_model, style=style, stubbed=True)
+        return CoverLetterResponse(
+            letter="", model=settings.cover_letter_model, style=style, stubbed=True
+        )
 
     user = (
         f"Company: {req.company}\n"
@@ -55,4 +57,6 @@ def generate_cover_letter(req: CoverLetterRequest, llm: LLM | None = None) -> Co
         model=settings.cover_letter_model,
         max_tokens=700,
     )
-    return CoverLetterResponse(letter=letter.strip(), model=settings.cover_letter_model, style=style)
+    return CoverLetterResponse(
+        letter=letter.strip(), model=settings.cover_letter_model, style=style
+    )

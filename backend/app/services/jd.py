@@ -24,7 +24,9 @@ Base every field strictly on the text; use null/empty when unstated."""
 
 
 def extract_jd_text(jd_text: str, llm: LLM) -> JDExtract:
-    raw = llm.complete(system=JD_SYSTEM, user=jd_text[:20000], model=settings.jd_model, max_tokens=1024)
+    raw = llm.complete(
+        system=JD_SYSTEM, user=jd_text[:20000], model=settings.jd_model, max_tokens=1024
+    )
     return JDExtract.model_validate(extract_json(raw))
 
 

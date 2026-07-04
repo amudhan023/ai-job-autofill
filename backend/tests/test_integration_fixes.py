@@ -4,9 +4,9 @@ These guard the fixes in the fast unit suite (the live HTTP versions live in
 extension/integration/contract.spec.ts)."""
 from __future__ import annotations
 
-import app.core.config as config_module
 from fastapi.testclient import TestClient
 
+import app.core.config as config_module
 from app.main import app
 
 client = TestClient(app)
@@ -53,7 +53,9 @@ def test_fake_ai_mode_produces_non_stub_answer(monkeypatch) -> None:
         json={
             "question": "Describe a time you led a team through change",
             "jd_summary": "Staff",
-            "experience": [{"company": "Acme", "title": "Staff Engineer", "bullets": ["Led a migration"]}],
+            "experience": [
+                {"company": "Acme", "title": "Staff Engineer", "bullets": ["Led a migration"]}
+            ],
         },
     )
     assert res.status_code == 200

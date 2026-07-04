@@ -12,7 +12,8 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:integration": "playwright test --config playwright.integration.config.ts",
-    "test:all": "npm run typecheck && npm run test && npm run build && npm run test:e2e"
+    "lint": "eslint .",
+    "test:all": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:e2e"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -20,6 +21,7 @@
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@playwright/test": "^1.47.2",
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/react": "^16.0.1",
@@ -30,10 +32,15 @@
     "@vitejs/plugin-react": "^4.3.1",
     "@vitest/coverage-v8": "^2.1.9",
     "autoprefixer": "^10.4.20",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "globals": "^15.15.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.45",
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",
+    "typescript-eslint": "^8.62.1",
     "vite": "^5.4.3",
     "vite-plugin-web-extension": "^4.1.6",
     "vitest": "^2.1.9"

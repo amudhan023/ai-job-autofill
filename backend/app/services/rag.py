@@ -28,7 +28,7 @@ def chunk_resume(profile_experience: list[dict]) -> list[str]:
 
 
 def cosine(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
+    dot = sum(x * y for x, y in zip(a, b, strict=True))
     na = math.sqrt(sum(x * x for x in a))
     nb = math.sqrt(sum(y * y for y in b))
     if na == 0 or nb == 0:
@@ -53,7 +53,7 @@ class VectorStore:
         if not self._texts:
             return []
         qvec = self.embeddings.embed([query])[0]
-        scored = [(t, cosine(qvec, v)) for t, v in zip(self._texts, self._vecs)]
+        scored = [(t, cosine(qvec, v)) for t, v in zip(self._texts, self._vecs, strict=True)]
         scored.sort(key=lambda x: x[1], reverse=True)
         return scored[:k]
 

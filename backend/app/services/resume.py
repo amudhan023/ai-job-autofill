@@ -19,7 +19,8 @@ from app.services.llm import LLM, extract_json, get_llm
 RESUME_SYSTEM = """You extract a candidate's resume into strict JSON.
 Return ONLY a JSON object with this shape (omit unknown fields, never invent):
 {
-  "personal": {"firstName","lastName","email","phone","location":{"city","state","country","postalCode"}},
+  "personal": {"firstName","lastName","email","phone",
+    "location":{"city","state","country","postalCode"}},
   "workAuth": {"usAuthorized": bool, "sponsorshipNeeded": bool, "visaType"},
   "experience": [{"company","title","startDate","endDate","current": bool, "bullets": []}],
   "education": [{"school","degree","major","gpa": number|null, "year"}],
@@ -165,7 +166,9 @@ _DEGREE_RE = re.compile(
     r"(?![a-zA-Z])",  # not \b — trailing periods (e.g. "B.S.") are non-word chars too
     re.IGNORECASE,
 )
-_INSTITUTION_RE = re.compile(r"\b(university|college|institute|polytechnic|school of)\b", re.IGNORECASE)
+_INSTITUTION_RE = re.compile(
+    r"\b(university|college|institute|polytechnic|school of)\b", re.IGNORECASE
+)
 _HEADER_SPLIT_RE = re.compile(r"\s+[—–|]\s+|\s+-\s+|,\s+|\s+at\s+", re.IGNORECASE)
 
 
@@ -359,7 +362,7 @@ def _regex_parse(text: str) -> UserProfile:
 
     # Candidate name — heuristic: first line of ≤4 capitalised words before any
     # contact details appear. Resume headers almost always start with the name.
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     for line in lines[:8]:
         words = line.split()
         # Skip lines that look like addresses, headings, or contact info

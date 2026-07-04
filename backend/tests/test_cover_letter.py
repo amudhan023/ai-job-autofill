@@ -13,7 +13,9 @@ client = TestClient(app)
 def test_generate_uses_llm_and_selected_style() -> None:
     llm = FakeLLM(default="Dear Hiring Manager, ...")
     res = generate_cover_letter(
-        CoverLetterRequest(profileSummary="18y SWE", jdSummary="Staff role", company="Acme", style="startup"),
+        CoverLetterRequest(
+            profileSummary="18y SWE", jdSummary="Staff role", company="Acme", style="startup"
+        ),
         llm,
     )
     assert res.letter.startswith("Dear")

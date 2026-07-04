@@ -31,11 +31,23 @@ _RULES: list[tuple[str, re.Pattern[str]]] = [
     ("DIVERSITY", re.compile(r"race|ethnic|gender|disab|veteran|orientation|pronoun", re.I)),
     ("SALARY", re.compile(r"salary|compensation|expected pay|ctc|desired pay", re.I)),
     ("COVER_LETTER", re.compile(r"cover letter", re.I)),
-    ("BEHAVIORAL", re.compile(r"describe a time|tell me about a time|give an example|situation where", re.I)),
-    ("MOTIVATION", re.compile(r"why (do you|are you|this|our|us)|what (interests|motivates)|why join", re.I)),
+    (
+        "BEHAVIORAL",
+        re.compile(r"describe a time|tell me about a time|give an example|situation where", re.I),
+    ),
+    (
+        "MOTIVATION",
+        re.compile(r"why (do you|are you|this|our|us)|what (interests|motivates)|why join", re.I),
+    ),
     ("EDUCATION", re.compile(r"degree|university|college|gpa|major|graduat", re.I)),
-    ("TECHNICAL_SKILL", re.compile(r"years.*(experience|exp).*(with|in)|proficien|familiar with|rate your", re.I)),
-    ("EMPLOYMENT", re.compile(r"current (company|employer|role|title)|present employer|notice period", re.I)),
+    (
+        "TECHNICAL_SKILL",
+        re.compile(r"years.*(experience|exp).*(with|in)|proficien|familiar with|rate your", re.I),
+    ),
+    (
+        "EMPLOYMENT",
+        re.compile(r"current (company|employer|role|title)|present employer|notice period", re.I),
+    ),
     ("PERSONAL", re.compile(r"name|email|phone|address|city|state|zip|linkedin|github", re.I)),
 ]
 
