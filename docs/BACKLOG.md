@@ -14,7 +14,7 @@ re-add finished phase/milestone work here.
 
 | ID | Task | Depends on | Status | Notes |
 |----|------|-----------|--------|-------|
-| T1 | **Lint gates**: ESLint (flat config, typescript-eslint) for `extension/` with `npm run lint`; ruff (`ruff check`) for `backend/`; both added as CI steps. Fix (or narrowly suppress with justification) existing violations. No repo-wide reformat — formatting policy is T9. | — | in-progress | Foundation for all later autonomous merges. |
+| T1 | **Lint gates**: ESLint (flat config, typescript-eslint) for `extension/` with `npm run lint`; ruff (`ruff check`) for `backend/`; both added as CI steps. Fix (or narrowly suppress with justification) existing violations. No repo-wide reformat — formatting policy is T9. | — | done (PR #2, 2026-07-04) | Foundation for all later autonomous merges. |
 | T2 | **Release packaging**: `npm run package` script that builds and zips `extension/dist` with a version stamp for Chrome Web Store upload; CI uploads the zip as an artifact on main. | T1 | ready | Keep manifest/package versions in sync (single source). |
 | T3 | **Coverage reporting in CI**: run `vitest --coverage` and `pytest --cov` in CI, publish summaries; add a modest fail-under floor (e.g. 70%) to prevent regression, not to chase 100%. | T1 | ready | Thresholds must pass on current code as-is. |
 
