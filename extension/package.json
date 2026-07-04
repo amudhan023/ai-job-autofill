@@ -13,6 +13,7 @@
     "test:e2e": "playwright test",
     "test:integration": "playwright test --config playwright.integration.config.ts",
     "lint": "eslint .",
+    "package": "npm run build && node scripts/package.mjs",
     "test:all": "npm run typecheck && npm run lint && npm run test && npm run build && npm run test:e2e"
   },
   "dependencies": {
