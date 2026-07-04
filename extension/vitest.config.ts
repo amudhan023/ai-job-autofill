@@ -26,6 +26,14 @@ export default defineConfig({
         "src/**/main.tsx",
         "src/**/*.d.ts",
       ],
+      // Modest floor to catch regressions, not to chase 100% — set below the
+      // current baseline with headroom, not tuned to the exact figure.
+      thresholds: {
+        statements: 70,
+        lines: 70,
+        branches: 70,
+        functions: 65,
+      },
     },
   },
 });

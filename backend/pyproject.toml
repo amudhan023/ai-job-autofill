@@ -10,3 +10,11 @@ select = ["E", "F", "I", "UP", "B"]
 # FastAPI's dependency-injection idiom (File(...), Depends(...), Query(...), ...)
 # relies on calls in argument defaults — not the mutable-default antipattern B008 flags.
 extend-immutable-calls = ["fastapi.File", "fastapi.Depends", "fastapi.Query", "fastapi.Body"]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+# Modest floor to catch regressions, not to chase 100% — set below the
+# current baseline (92%) with headroom, not tuned to the exact figure.
+fail_under = 70

@@ -30,8 +30,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Unit + component tests
-        run: npm run test
+      - name: Unit + component tests (coverage)
+        run: npm run test:coverage
 
       - name: Build extension
         run: npm run build
@@ -81,8 +81,8 @@ jobs:
       - name: Lint (ruff)
         run: ruff check .
 
-      - name: Run tests
-        run: python -m pytest -q
+      - name: Run tests (coverage)
+        run: python -m pytest -q --cov --cov-report=term-missing
 
   integration:
     name: Integration (Docker — extension ↔ backend)
