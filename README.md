@@ -8,6 +8,7 @@ that keeps the user in control.
 > **New here? Read the [Complete Guide](./docs/GUIDE.md)** — how it works,
 > install, load into Chrome for testing, and use the autofill feature.
 >
+> Architecture & design at a glance: [`docs/OVERVIEW.md`](./docs/OVERVIEW.md).
 > Full product & architecture spec: [`PLAN.md`](./PLAN.md).
 > Implementation status & decisions: [`docs/IMPLEMENTATION.md`](./docs/IMPLEMENTATION.md).
 
