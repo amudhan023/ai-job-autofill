@@ -66,7 +66,9 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "postalCode", patterns: [/zip|postal|post.?code/i], profile: "personal.location.postalCode", type: "text", autocomplete: ["postal-code"] },
 
   // --- Experience ---
-  { id: "currentCompany", patterns: [/current.?(company|employer)|present.?company/i, /\bemployer\b/i, /most.?recent.?(company|employer)/i], profile: "experience[0].company", type: "text", autocomplete: ["organization"] },
+  // The bare-"Employer" alias is anchored: an unanchored /\bemployer\b/ used
+  // to steal "How did you first learn about X as an employer?" from howHeard.
+  { id: "currentCompany", patterns: [/current.?(company|employer)|present.?company/i, /^employer\s*:?\*?$/i, /most.?recent.?(company|employer)/i], profile: "experience[0].company", type: "text", autocomplete: ["organization"] },
   { id: "currentTitle", patterns: [/current.?(title|position|role)/i, /job.?title/i, /most.?recent.?(title|position|role)/i], profile: "experience[0].title", type: "text", autocomplete: ["organization-title"] },
   { id: "yearsExp", patterns: [/years.?(of.)?exp/i, /experience.*years/i, /how.?many.?years/i], profile: "meta.totalYearsExp", type: "number" },
 

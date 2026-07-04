@@ -191,7 +191,10 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
     match.alreadyHadValue = true;
     return false;
   }
-  return writeField(handle, match.value as string);
+  const ok = await writeField(handle, match.value as string);
+  match.filled = ok;
+  if (!ok) match.reason = "Matched with a value, but the control didn't accept the write.";
+  return ok;
 }
 
 /** Attach the locally stored resume to a Resume/CV file input. */
@@ -215,6 +218,7 @@ async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boo
     match.value = file.name;
     match.confidence = 0.95;
     match.tier = "high";
+    match.filled = true;
   }
   return ok;
 }

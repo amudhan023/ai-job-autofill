@@ -82,6 +82,13 @@ export interface FieldMatch {
    * matched" — otherwise both look identical as "Filled 0 of N".
    */
   alreadyHadValue?: boolean;
+  /**
+   * True only when this pass actually WROTE the field. Confidence tier alone
+   * cannot tell the user this — a high-confidence match can still be skipped
+   * (confirm flag, existing value) or fail to take (widget rejected the
+   * write) — so badges render from this, not from tier.
+   */
+  filled?: boolean;
 }
 
 /** Result of attempting to fill the current page. */

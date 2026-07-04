@@ -128,10 +128,54 @@ describe("Greenhouse live regression — resume attach", () => {
 
 /**
  * Affirm variant (inspected live 2026-07-04): custom questions are
- * react-select comboboxes (input role=combobox, aria-labelledby, LAZY menu
- * rendered only while typing), and the iti trigger reads "Select country"
- * before any choice is made.
+ * react-select comboboxes (input role=combobox, aria-labelledby), and the iti
+ * trigger reads "Select country" before any choice is made.
+ *
+ * The react-select model below reproduces the REAL widget behavior verified
+ * on the live page — each quirk caught an actual bug:
+ *  - typing alone does NOT open the menu; a mousedown reaching the control
+ *    does (the extension's events bubble up from the input);
+ *  - the menu (listbox of role=option, filtered by the typed text) is
+ *    portaled to document.body, NOT rendered near the control;
+ *  - `aria-controls` exists on the input ONLY while the menu is open;
+ *  - picking an option renders it into a .select__single-value div, clears
+ *    the search input, and closes the menu.
  */
+function mountReactSelect(questionId: string, options: string[]): void {
+  const input = document.getElementById(questionId) as HTMLInputElement;
+  const control = input.closest(".select__control")!;
+  const listboxId = `react-select-${questionId}-listbox`;
+
+  const closeMenu = () => {
+    document.getElementById(listboxId)?.remove();
+    input.removeAttribute("aria-controls");
+    input.setAttribute("aria-expanded", "false");
+  };
+
+  control.addEventListener("mousedown", () => {
+    if (input.getAttribute("aria-expanded") === "true") return closeMenu();
+    const menu = document.createElement("div");
+    menu.id = listboxId;
+    menu.setAttribute("role", "listbox");
+    const filter = input.value.trim().toLowerCase();
+    for (const text of options) {
+      if (filter && !text.toLowerCase().includes(filter)) continue;
+      const opt = document.createElement("div");
+      opt.setAttribute("role", "option");
+      opt.textContent = text;
+      opt.addEventListener("mousedown", () => {
+        control.querySelector(".select__single-value")!.textContent = text;
+        input.value = "";
+        closeMenu();
+      });
+      menu.appendChild(opt);
+    }
+    document.body.appendChild(menu); // portal — NOT near the control
+    input.setAttribute("aria-controls", listboxId);
+    input.setAttribute("aria-expanded", "true");
+  });
+}
+
 function affirmLiveForm(): void {
   document.body.innerHTML = `
     <form id="application-form">
@@ -153,39 +197,52 @@ function affirmLiveForm(): void {
       <div class="select__control">
         <input id="question_1" role="combobox" aria-haspopup="true" aria-expanded="false"
           aria-labelledby="question_1-label" type="text" />
-        <div id="question_1-menu"></div>
+        <div class="select__single-value"></div>
       </div>
       <div id="question_2-label" class="label">Do you now or in the future require sponsorship for employment visa status (e.g., H-1B, TN, E-3, F-1 visa status)?*</div>
       <div class="select__control">
         <input id="question_2" role="combobox" aria-haspopup="true" aria-expanded="false"
           aria-labelledby="question_2-label" type="text" />
-        <div id="question_2-menu"></div>
+        <div class="select__single-value"></div>
+      </div>
+      <div id="question_3-label" class="label">How did you first learn about Affirm as an employer?*</div>
+      <div class="select__control">
+        <input id="question_3" role="combobox" aria-haspopup="true" aria-expanded="false"
+          aria-labelledby="question_3-label" type="text" />
+        <div class="select__single-value"></div>
+      </div>
+      <div id="question_4-label" class="label">Have you previously been employed at Affirm for any length of time?*</div>
+      <div class="select__control">
+        <input id="question_4" role="combobox" aria-haspopup="true" aria-expanded="false"
+          aria-labelledby="question_4-label" type="text" />
+        <div class="select__single-value"></div>
       </div>
     </form>`;
-  // Lazy react-select-style menus: options render only in reaction to typing.
-  for (const q of ["question_1", "question_2"]) {
-    const input = document.getElementById(q) as HTMLInputElement;
-    input.addEventListener("input", () => {
-      document.getElementById(`${q}-menu`)!.innerHTML =
-        `<div role="option">Yes</div><div role="option">No</div>`;
-    });
-  }
+  mountReactSelect("question_1", ["Yes", "No"]);
+  mountReactSelect("question_2", ["Yes", "No"]);
+  mountReactSelect("question_3", ["Job Board (LinkedIn, Indeed)", "Employee Referral", "Other"]);
+  mountReactSelect("question_4", ["Yes", "No"]);
+}
+
+function selectedValue(questionId: string): string {
+  return (
+    document
+      .getElementById(questionId)!
+      .closest(".select__control")!
+      .querySelector(".select__single-value")!.textContent ?? ""
+  );
 }
 
 describe("Affirm live regression — react-select Yes/No questions", () => {
-  it("fills work authorization and sponsorship dropdowns above the floor", async () => {
+  it("fills every mandatory dropdown question via the real open→pick flow", async () => {
     affirmLiveForm();
-    const picked: string[] = [];
-    for (const q of ["question_1-menu", "question_2-menu"]) {
-      document.getElementById(q)!.addEventListener("click", (e) => {
-        picked.push((e.target as HTMLElement).textContent ?? "");
-      });
-    }
 
     const p = emptyProfile();
     p.personal.firstName = "Amudhan";
     p.workAuth.usAuthorized = true;
     p.workAuth.sponsorshipNeeded = false;
+    p.preferences.hearAboutUs = "Job Board";
+    p.preferences.previouslyEmployedHere = false;
     const result = await detectAndFill(p, NO_SETTLE);
 
     const auth = result.matches.find((m) => m.ruleId === "usAuthorized")!;
@@ -193,9 +250,30 @@ describe("Affirm live regression — react-select Yes/No questions", () => {
     // Comboboxes are select-typed now, so radio-expecting rules clear the floor.
     expect(auth.confidence).toBeGreaterThanOrEqual(0.7);
     expect(sponsor.confidence).toBeGreaterThanOrEqual(0.7);
-    expect((document.getElementById("question_1") as HTMLInputElement).value).toBe("Yes");
-    expect((document.getElementById("question_2") as HTMLInputElement).value).toBe("No");
-    expect(picked).toEqual(["Yes", "No"]);
+    // Actually selected in the widget (portal menu + post-open aria-controls).
+    expect(selectedValue("question_1")).toBe("Yes");
+    expect(selectedValue("question_2")).toBe("No");
+    expect(selectedValue("question_3")).toBe("Job Board (LinkedIn, Indeed)");
+    expect(selectedValue("question_4")).toBe("No");
+    // Write status is truthful: all four report filled.
+    for (const rule of ["usAuthorized", "sponsorship", "howHeard", "prevEmployedHere"]) {
+      expect(result.matches.find((m) => m.ruleId === rule)?.filled).toBe(true);
+    }
+    // No dangling open menus.
+    expect(document.querySelectorAll("[role='listbox']:not(#iti-1__country-listbox)").length).toBe(0);
+  });
+
+  it("write failures are reported honestly (no option matches the profile value)", async () => {
+    affirmLiveForm();
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+    p.preferences.hearAboutUs = "Carrier Pigeon"; // matches no menu option
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    const heard = result.matches.find((m) => m.ruleId === "howHeard")!;
+    expect(heard.filled).toBeFalsy();
+    expect(heard.reason).toMatch(/didn't accept the write/i);
+    expect(selectedValue("question_3")).toBe("");
   });
 
   it('matches the pre-selection iti label "Select country"', async () => {

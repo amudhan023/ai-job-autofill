@@ -19,32 +19,40 @@ function match(overrides: Partial<FieldMatch>): FieldMatch {
   };
 }
 
-describe("ConfidenceBadge", () => {
-  it("renders a high-confidence check with reason + percentage in title", () => {
-    render(<ConfidenceBadge match={match({ tier: "high", confidence: 0.97 })} />);
+describe("ConfidenceBadge (write-status driven)", () => {
+  it("shows a green check ONLY for fields actually written this pass", () => {
+    render(<ConfidenceBadge match={match({ filled: true, confidence: 0.97 })} />);
     const badge = screen.getByText("✓");
     expect(badge).toBeInTheDocument();
     expect(badge).toHaveAttribute("title", expect.stringContaining("Exact label match."));
     expect(badge).toHaveAttribute("title", expect.stringContaining("97%"));
+    expect(badge.className).toContain("green");
   });
 
-  it("renders medium tier as a warning marker", () => {
-    render(<ConfidenceBadge match={match({ tier: "medium", confidence: 0.85 })} />);
-    expect(screen.getByText("!")).toBeInTheDocument();
+  it("high-confidence match that was NOT written is a review marker, not a check", () => {
+    // e.g. confirm-gated salary, or the widget rejected the write
+    render(<ConfidenceBadge match={match({ tier: "high", filled: undefined })} />);
+    const badge = screen.getByText("!");
+    expect(badge.className).toContain("yellow");
   });
 
-  it("renders low tier as a question marker", () => {
-    render(<ConfidenceBadge match={match({ tier: "low", confidence: 0.4 })} />);
+  it("skipped-for-existing-value shows a muted check", () => {
+    render(<ConfidenceBadge match={match({ alreadyHadValue: true, value: null })} />);
+    const badge = screen.getByText("✓");
+    expect(badge.className).toContain("gray");
+  });
+
+  it("unmatched / no-value fields show a question marker", () => {
+    render(<ConfidenceBadge match={match({ value: null, ruleId: null, tier: "low", confidence: 0 })} />);
     expect(screen.getByText("?")).toBeInTheDocument();
   });
 
-  it("forces low styling for blocklisted fields regardless of tier", () => {
+  it("blocklisted fields show a never-fill cross regardless of tier", () => {
     render(
       <ConfidenceBadge
-        match={match({ tier: "high", flags: ["blocklist"], reason: "Sensitive field — never auto-filled." })}
+        match={match({ tier: "high", value: null, flags: ["blocklist"], reason: "Sensitive field — never auto-filled." })}
       />,
     );
-    // blocklist coerces to the low marker
-    expect(screen.getByText("?")).toBeInTheDocument();
+    expect(screen.getByText("✕")).toBeInTheDocument();
   });
 });

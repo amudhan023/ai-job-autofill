@@ -144,32 +144,63 @@ export function isComboboxInput(el: HTMLElement): boolean {
 }
 
 /**
- * ARIA combobox writer: type the value into the text input (which filters the
- * suggestion list), wait briefly for options to render, then select the best
- * matching [role=option]. Selecting an option is a value choice, not a form
- * mutation — the zero-mutation guarantee (never submit) is unaffected.
+ * ARIA combobox writer, verified against real react-select on
+ * job-boards.greenhouse.io (2026-07-04). The real widget behaves differently
+ * from naive expectations in two load-bearing ways:
  *
- * If no matching option appears, the typed text is left in place (partial
- * success): many comboboxes accept free text, and the user reviews anyway.
+ *  1. Typing alone does NOT open the menu — programmatic input events set
+ *     the filter text but `menuIsOpen` stays false. The menu opens on a
+ *     mouse-down reaching the select CONTROL (our events bubble up from the
+ *     input), after which options render.
+ *  2. `aria-controls` (→ the listbox id) exists on the input ONLY WHILE the
+ *     menu is open — it must be read after opening, never cached from
+ *     discovery time.
+ *
+ * Option matching is strictly scoped to the combobox's own listbox
+ * (aria-controls / aria-owns, else the nearest ancestor that contains
+ * options). There is deliberately NO document-wide fallback: with multiple
+ * widgets on a page it grabs a foreign list — e.g. "No" matching "Norway"
+ * in the phone-country picker.
+ *
+ * Selecting an option is a value choice, not a form mutation — the
+ * zero-mutation guarantee (never submit) is unaffected.
  */
 export async function setComboboxValue(
   el: HTMLInputElement,
   value: string,
-  optionWaitMs = 150,
+  optionWaitMs = 250,
 ): Promise<boolean> {
   el.focus?.();
+  // Type first: filters the option list on searchable widgets, harmless on
+  // non-searchable ones.
   setInputValue(el, value);
+
+  // Open the menu unless something already did (never toggle it closed).
+  if (el.getAttribute("aria-expanded") !== "true") {
+    clickSequence(el);
+  }
   await delay(optionWaitMs);
 
   const option = findComboboxOption(el, value);
-  if (option) clickSequence(option);
+  if (!option) {
+    // Close what we opened so no menu is left dangling over the form.
+    if (el.getAttribute("aria-expanded") === "true") {
+      el.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }),
+      );
+    }
+    return false;
+  }
+  clickSequence(option);
   return true;
 }
 
 function findComboboxOption(input: HTMLInputElement, value: string): HTMLElement | null {
-  const scopes: ParentNode[] = [];
-  // aria-controls / aria-owns points at the listbox (per the ARIA pattern).
   const doc = input.ownerDocument ?? document;
+  const scopes: ParentNode[] = [];
+
+  // aria-controls / aria-owns points at the listbox (per the ARIA pattern) —
+  // read fresh, post-open (react-select only sets it while the menu is open).
   const controlsId =
     input.getAttribute("aria-controls") ??
     input.getAttribute("aria-owns") ??
@@ -178,15 +209,29 @@ function findComboboxOption(input: HTMLInputElement, value: string): HTMLElement
     const listbox = doc.getElementById(controlsId);
     if (listbox) scopes.push(listbox);
   }
-  // Fallback: any listbox in the input's root (portal-rendered menus included).
-  scopes.push(queryScopeFor(input));
+
+  // Fallback for widgets without aria-controls: nearest ancestor subtree that
+  // contains options. Bounded walk — never the whole document, which would
+  // cross into other widgets' option lists.
+  if (scopes.length === 0) {
+    let node: HTMLElement | null = input.parentElement;
+    for (let depth = 0; depth < 5 && node; depth++) {
+      if (node.querySelector("[role='option']")) {
+        scopes.push(node);
+        break;
+      }
+      node = node.parentElement;
+    }
+  }
 
   const wanted = value.trim().toLowerCase();
+  const text = (o: HTMLElement) => (o.textContent ?? "").trim().toLowerCase();
   for (const scope of scopes) {
     const options = Array.from(scope.querySelectorAll<HTMLElement>("[role='option']"));
     const match =
-      options.find((o) => (o.textContent ?? "").trim().toLowerCase() === wanted) ??
-      options.find((o) => (o.textContent ?? "").trim().toLowerCase().includes(wanted));
+      options.find((o) => text(o) === wanted) ??
+      options.find((o) => text(o).startsWith(wanted)) ??
+      options.find((o) => text(o).includes(wanted));
     if (match) return match;
   }
   return null;
