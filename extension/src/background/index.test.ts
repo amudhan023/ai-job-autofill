@@ -118,3 +118,58 @@ describe("background service worker — backend-unreachable UX (T6)", () => {
     expect(res.error).toMatch(/Failed to fetch/);
   });
 });
+
+describe("background service worker — cover letter generation (T7)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    await import("./index");
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("REQUEST_COVER_LETTER posts to the dedicated endpoint with company/style and returns the letter", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        letter: "Dear Acme, ...",
+        model: "m",
+        style: "startup",
+        stubbed: false,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = (await dispatch({
+      type: "REQUEST_COVER_LETTER",
+      jdSummary: "Backend engineer role.",
+      company: "Acme",
+      style: "startup",
+    })) as { ok: boolean; coverLetter?: { letter: string } };
+    expect(res.ok).toBe(true);
+    expect(res.coverLetter?.letter).toBe("Dear Acme, ...");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/ai/cover-letter",
+      expect.objectContaining({ method: "POST" }),
+    );
+    const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const body = JSON.parse(init.body as string);
+    expect(body).toMatchObject({ jdSummary: "Backend engineer role.", company: "Acme", style: "startup" });
+  });
+
+  it("REQUEST_COVER_LETTER surfaces a clear error when the backend is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    const res = (await dispatch({
+      type: "REQUEST_COVER_LETTER",
+      jdSummary: "Backend engineer role.",
+      company: "Acme",
+      style: "formal",
+    })) as { ok: boolean; error?: string };
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/Failed to fetch/);
+  });
+});
