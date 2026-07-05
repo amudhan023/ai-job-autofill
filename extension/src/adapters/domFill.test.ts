@@ -1,10 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  setInputValue,
-  setSelectValue,
-  setRadioOrCheckbox,
-  labelForControl,
-} from "./domFill";
+import { setInputValue, setSelectValue, setRadioOrCheckbox, labelForControl } from "./domFill";
 
 describe("setInputValue", () => {
   it("sets value and dispatches input + change events", () => {
@@ -44,19 +39,28 @@ describe("setSelectValue", () => {
   }
 
   it("matches by exact option value", () => {
-    const sel = buildSelect([["bs", "Bachelors"], ["ms", "Masters"]]);
+    const sel = buildSelect([
+      ["bs", "Bachelors"],
+      ["ms", "Masters"],
+    ]);
     expect(setSelectValue(sel, "ms")).toBe(true);
     expect(sel.value).toBe("ms");
   });
 
   it("matches by case-insensitive label", () => {
-    const sel = buildSelect([["bs", "Bachelor's Degree"], ["ms", "Master's Degree"]]);
+    const sel = buildSelect([
+      ["bs", "Bachelor's Degree"],
+      ["ms", "Master's Degree"],
+    ]);
     expect(setSelectValue(sel, "master's degree")).toBe(true);
     expect(sel.value).toBe("ms");
   });
 
   it("falls back to partial label inclusion", () => {
-    const sel = buildSelect([["bs", "Bachelor of Science"], ["ms", "Master of Science"]]);
+    const sel = buildSelect([
+      ["bs", "Bachelor of Science"],
+      ["ms", "Master of Science"],
+    ]);
     expect(setSelectValue(sel, "Master")).toBe(true);
     expect(sel.value).toBe("ms");
   });
@@ -125,7 +129,9 @@ describe("setRadioOrCheckbox", () => {
       <label><input type="radio" name="ev" value="no"> No</label>`;
     const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='ev']"));
     let changed = false;
-    group[0].addEventListener("change", () => { changed = true; });
+    group[0].addEventListener("change", () => {
+      changed = true;
+    });
     setRadioOrCheckbox(group, "Yes");
     expect(changed).toBe(true);
   });

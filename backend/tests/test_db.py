@@ -1,6 +1,7 @@
 """Persistence tests for app/services/db.py — a tmp file (not :memory:) so
 these specifically exercise the durable-across-instances path that the
 profile API's SQLite swap depends on."""
+
 from __future__ import annotations
 
 import pytest

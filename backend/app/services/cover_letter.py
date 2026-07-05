@@ -1,4 +1,5 @@
 """Cover letter generation (Phase 4) — uses the Opus-class model for tone."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

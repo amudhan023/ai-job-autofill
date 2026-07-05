@@ -55,7 +55,10 @@ function area(): StorageArea {
   return c.storage.session ?? c.storage.local;
 }
 
-export function isFresh(state: FillSessionState | null, now = Date.now()): state is FillSessionState {
+export function isFresh(
+  state: FillSessionState | null,
+  now = Date.now(),
+): state is FillSessionState {
   return !!state && now - state.updatedAt < MAX_AGE_MS;
 }
 

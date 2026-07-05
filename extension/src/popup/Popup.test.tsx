@@ -22,13 +22,37 @@ const sampleResult: FillResult = {
   totalFields: 5,
   timestamp: Date.now(),
   matches: [
-    { fieldId: "1", label: "First Name", type: "text", ruleId: "firstName", profilePath: "personal.firstName", value: "Sam", confidence: 0.97, tier: "high", flags: [], reason: "Exact label match." },
-    { fieldId: "2", label: "Cover Letter", type: "textarea", ruleId: "coverLetter", profilePath: null, value: null, confidence: 0, tier: "low", flags: ["ai_generate"], reason: "Free-text." },
+    {
+      fieldId: "1",
+      label: "First Name",
+      type: "text",
+      ruleId: "firstName",
+      profilePath: "personal.firstName",
+      value: "Sam",
+      confidence: 0.97,
+      tier: "high",
+      flags: [],
+      reason: "Exact label match.",
+    },
+    {
+      fieldId: "2",
+      label: "Cover Letter",
+      type: "textarea",
+      ruleId: "coverLetter",
+      profilePath: null,
+      value: null,
+      confidence: 0,
+      tier: "low",
+      flags: ["ai_generate"],
+      reason: "Free-text.",
+    },
   ],
 };
 
 function respondWith(handler: (msg: ExtensionMessage) => unknown) {
-  chromeMock().tabs.sendMessage.mockImplementation(async (_id: number, msg: ExtensionMessage) => handler(msg));
+  chromeMock().tabs.sendMessage.mockImplementation(async (_id: number, msg: ExtensionMessage) =>
+    handler(msg),
+  );
 }
 
 describe("Popup", () => {
@@ -76,7 +100,19 @@ describe("Popup", () => {
       totalFields: 2,
       matches: [
         { ...sampleResult.matches[0], alreadyHadValue: true },
-        { fieldId: "3", label: "Resume", type: "file", ruleId: "resumeUpload", profilePath: "meta.resumeFileName", value: "resume.pdf", confidence: 1, tier: "high", flags: [], reason: "Already has a file attached — left untouched.", alreadyHadValue: true },
+        {
+          fieldId: "3",
+          label: "Resume",
+          type: "file",
+          ruleId: "resumeUpload",
+          profilePath: "meta.resumeFileName",
+          value: "resume.pdf",
+          confidence: 1,
+          tier: "high",
+          flags: [],
+          reason: "Already has a file attached — left untouched.",
+          alreadyHadValue: true,
+        },
       ],
     };
     respondWith((msg) => {
@@ -85,7 +121,9 @@ describe("Popup", () => {
       return { ok: true };
     });
     render(<Popup />);
-    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /autofill this application/i }),
+    );
 
     expect(await screen.findByText(/filled 0 of 2 fields/i)).toBeInTheDocument();
     expect(screen.getByText(/2 already had a value/i)).toBeInTheDocument();
@@ -112,7 +150,18 @@ describe("Popup", () => {
       ...sampleResult,
       matches: [
         sampleResult.matches[0],
-        { fieldId: "2", label: "Why this role?", type: "textarea", ruleId: null, profilePath: null, value: null, confidence: 0, tier: "low", flags: ["ai_generate"], reason: "Free-text." },
+        {
+          fieldId: "2",
+          label: "Why this role?",
+          type: "textarea",
+          ruleId: null,
+          profilePath: null,
+          value: null,
+          confidence: 0,
+          tier: "low",
+          flags: ["ai_generate"],
+          reason: "Free-text.",
+        },
       ],
     };
     respondWith((msg) => {
@@ -122,7 +171,9 @@ describe("Popup", () => {
       return { ok: true };
     });
     render(<Popup />);
-    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /autofill this application/i }),
+    );
 
     const draftButton = await screen.findByRole("button", { name: "AI draft" });
     await userEvent.click(draftButton);
@@ -147,7 +198,9 @@ describe("Popup — cover letter generation (T7)", () => {
       return { ok: true };
     });
     render(<Popup />);
-    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /autofill this application/i }),
+    );
     await screen.findByText(/filled 3 of 5 fields/i);
   }
 
@@ -178,7 +231,9 @@ describe("Popup — cover letter generation (T7)", () => {
       return { ok: true };
     });
     render(<Popup />);
-    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /autofill this application/i }),
+    );
     await screen.findByText(/filled 3 of 5 fields/i);
 
     await userEvent.click(screen.getByRole("button", { name: /generate cover letter/i }));
@@ -195,7 +250,9 @@ describe("Popup — cover letter generation (T7)", () => {
       return { ok: true };
     });
     render(<Popup />);
-    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await userEvent.click(
+      await screen.findByRole("button", { name: /autofill this application/i }),
+    );
     await screen.findByText(/filled 3 of 5 fields/i);
 
     await userEvent.click(screen.getByRole("button", { name: /generate cover letter/i }));

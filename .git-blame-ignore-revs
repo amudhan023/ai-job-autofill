@@ -1,0 +1,8 @@
+# Formatting-only commits to skip in `git blame` (T9).
+# Configure once per clone with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# style: apply ruff format across backend/ (T9)
+5c4c5986f419f092653f7cb90afff26972d95f94
+# style: apply Prettier across extension/ (T9)
+73b1ce5eaadfd17b549d2f3a38fa738b01f5a564

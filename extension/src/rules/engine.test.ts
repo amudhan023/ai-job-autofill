@@ -169,7 +169,10 @@ describe("rule engine — company-specific questions", () => {
   it("fills How did you hear about us from preferences.hearAboutUs", () => {
     const p = emptyProfile();
     p.preferences.hearAboutUs = "Job Board";
-    const m = evaluateField(field({ label: "How did you hear about Confluent?", type: "select" }), p);
+    const m = evaluateField(
+      field({ label: "How did you hear about Confluent?", type: "select" }),
+      p,
+    );
     expect(m.ruleId).toBe("howHeard");
     expect(m.value).toBe("Job Board");
   });
@@ -197,7 +200,11 @@ describe("rule engine — company-specific questions", () => {
   it("fills consent contact checkbox with Yes by default", () => {
     const p = emptyProfile(); // consentToContact = true
     const m = evaluateField(
-      field({ label: "Do you agree to allow Confluent to contact you about job opportunities for up to 5 years?", type: "checkbox" }),
+      field({
+        label:
+          "Do you agree to allow Confluent to contact you about job opportunities for up to 5 years?",
+        type: "checkbox",
+      }),
       p,
     );
     expect(m.ruleId).toBe("consentContact");
@@ -208,7 +215,10 @@ describe("rule engine — company-specific questions", () => {
     const p = emptyProfile();
     p.preferences.consentToContact = false;
     const m = evaluateField(
-      field({ label: "Do you agree to allow Confluent to contact you about job opportunities?", type: "checkbox" }),
+      field({
+        label: "Do you agree to allow Confluent to contact you about job opportunities?",
+        type: "checkbox",
+      }),
       p,
     );
     expect(m.value).toBe("No");
@@ -220,7 +230,11 @@ describe("rule engine — work authorization", () => {
     const p = emptyProfile();
     p.workAuth.sponsorshipNeeded = false;
     const m = evaluateField(
-      field({ label: "Do you now, or will you in the future, require sponsorship for employment visa status?", type: "radio" }),
+      field({
+        label:
+          "Do you now, or will you in the future, require sponsorship for employment visa status?",
+        type: "radio",
+      }),
       p,
     );
     expect(m.ruleId).toBe("sponsorship");

@@ -128,6 +128,16 @@ regression guard for an accidental algorithmic blowup (e.g. O(n²) DOM walk),
 not a tight perf target; runs in CI as part of the normal `npm run test`
 suite, no separate bench command needed.
 
+### Formatting policy (T9, 2026-07-05)
+
+Prettier (`extension/`, `npm run format` / `format:check`) and `ruff format`
+(`backend/`, `ruff format` / `ruff format --check`) are the enforced
+formatters, both gated in CI (`--check` steps). The one-time repo-wide
+reformat landed as dedicated commits; those SHAs are listed in
+`.git-blame-ignore-revs` at the repo root — run
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone to
+have `git blame` skip them.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

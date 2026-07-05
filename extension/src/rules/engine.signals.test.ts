@@ -66,10 +66,7 @@ describe("multi-signal matching — name/id attributes", () => {
     const p = emptyProfile();
     p.personal.firstName = "Amudhan";
     p.personal.lastName = "Kumar";
-    const m = evaluateField(
-      field({ label: "Last Name", nameAttr: "first_name_container" }),
-      p,
-    );
+    const m = evaluateField(field({ label: "Last Name", nameAttr: "first_name_container" }), p);
     expect(m.ruleId).toBe("lastName");
     expect(m.value).toBe("Kumar");
   });
@@ -100,10 +97,7 @@ describe("blocklist covers all direct signals", () => {
   it("does not false-positive on attr text merely containing 'race'", () => {
     const p = emptyProfile();
     p.personal.email = "a@example.com";
-    const m = evaluateField(
-      field({ label: "Email", nameAttr: "embrace_email", type: "email" }),
-      p,
-    );
+    const m = evaluateField(field({ label: "Email", nameAttr: "embrace_email", type: "email" }), p);
     expect(m.flags).not.toContain("blocklist");
     expect(m.ruleId).toBe("email");
   });
@@ -116,10 +110,7 @@ describe("best-match beats rule order", () => {
     p.links.portfolio = "https://me.dev";
     // "State" exact-matches the state rule; placeholder mentions "website"
     // which pattern-matches the earlier portfolio rule at lower strength.
-    const m = evaluateField(
-      field({ label: "State", placeholder: "Link to your website" }),
-      p,
-    );
+    const m = evaluateField(field({ label: "State", placeholder: "Link to your website" }), p);
     expect(m.ruleId).toBe("state");
     expect(m.value).toBe("TX");
   });

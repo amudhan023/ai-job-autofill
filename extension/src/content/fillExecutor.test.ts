@@ -32,7 +32,9 @@ describe("detectAndFill (integration)", () => {
     expect(result.platform).toBe("greenhouse");
     expect((document.getElementById("fn") as HTMLInputElement).value).toBe("Amudhan");
     expect((document.getElementById("em") as HTMLInputElement).value).toBe("a@example.com");
-    expect((document.getElementById("li") as HTMLInputElement).value).toBe("https://linkedin.com/in/amudhan");
+    expect((document.getElementById("li") as HTMLInputElement).value).toBe(
+      "https://linkedin.com/in/amudhan",
+    );
     expect(result.filledCount).toBeGreaterThanOrEqual(3);
   });
 

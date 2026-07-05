@@ -13,10 +13,22 @@ def test_rank_endpoint_orders_by_match() -> None:
         json={
             "candidate": {"skills": ["Kafka", "Go"], "years_experience": 18},
             "postings": [
-                {"id": "a", "title": "Staff Eng", "company": "Acme", "url": "u",
-                 "required_skills": ["Kafka", "Go"], "years_required": 8},
-                {"id": "b", "title": "Staff Eng", "company": "Beta", "url": "u",
-                 "required_skills": ["COBOL"], "years_required": 8},
+                {
+                    "id": "a",
+                    "title": "Staff Eng",
+                    "company": "Acme",
+                    "url": "u",
+                    "required_skills": ["Kafka", "Go"],
+                    "years_required": 8,
+                },
+                {
+                    "id": "b",
+                    "title": "Staff Eng",
+                    "company": "Beta",
+                    "url": "u",
+                    "required_skills": ["COBOL"],
+                    "years_required": 8,
+                },
             ],
             "threshold": 0.0,
         },

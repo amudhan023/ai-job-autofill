@@ -47,7 +47,9 @@ export interface FillViaExtensionResult {
 export async function fillViaExtension(worker: Worker): Promise<FillViaExtensionResult> {
   return worker.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    return (await chrome.tabs.sendMessage(tab.id!, { type: "FILL_FORM" })) as FillViaExtensionResult;
+    return (await chrome.tabs.sendMessage(tab.id!, {
+      type: "FILL_FORM",
+    })) as FillViaExtensionResult;
   });
 }
 

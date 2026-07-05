@@ -62,8 +62,7 @@ export function Options() {
         <>
           <h1 className="mb-1 text-xl font-bold text-gray-900">Your Profile</h1>
           <p className="mb-6 text-sm text-gray-500">
-            Stored locally on this device. Used to autofill applications. Nothing is
-            uploaded.
+            Stored locally on this device. Used to autofill applications. Nothing is uploaded.
           </p>
 
           <ResumeUploadSection
@@ -75,10 +74,14 @@ export function Options() {
                 if (parsed.personal.lastName) d.personal.lastName = parsed.personal.lastName;
                 if (parsed.personal.email) d.personal.email = parsed.personal.email;
                 if (parsed.personal.phone) d.personal.phone = parsed.personal.phone;
-                if (parsed.personal.location.city) d.personal.location.city = parsed.personal.location.city;
-                if (parsed.personal.location.state) d.personal.location.state = parsed.personal.location.state;
-                if (parsed.personal.location.country) d.personal.location.country = parsed.personal.location.country;
-                if (parsed.personal.location.postalCode) d.personal.location.postalCode = parsed.personal.location.postalCode;
+                if (parsed.personal.location.city)
+                  d.personal.location.city = parsed.personal.location.city;
+                if (parsed.personal.location.state)
+                  d.personal.location.state = parsed.personal.location.state;
+                if (parsed.personal.location.country)
+                  d.personal.location.country = parsed.personal.location.country;
+                if (parsed.personal.location.postalCode)
+                  d.personal.location.postalCode = parsed.personal.location.postalCode;
                 if (parsed.experience.length > 0) d.experience = parsed.experience;
                 if (parsed.education.length > 0) d.education = parsed.education;
                 if (parsed.skills.technical.length > 0) d.skills = parsed.skills;
@@ -95,54 +98,117 @@ export function Options() {
           />
 
           <Section title="Personal">
-            <TextField label="First name" value={profile.personal.firstName}
-              onChange={(v) => update((d) => (d.personal.firstName = v))} />
-            <TextField label="Middle name" value={profile.personal.middleName}
-              onChange={(v) => update((d) => (d.personal.middleName = v))} />
-            <TextField label="Last name" value={profile.personal.lastName}
-              onChange={(v) => update((d) => (d.personal.lastName = v))} />
-            <TextField label="Preferred name (optional)" value={profile.personal.preferredName}
-              onChange={(v) => update((d) => (d.personal.preferredName = v))} />
-            <TextField label="Email" type="email" value={profile.personal.email}
-              onChange={(v) => update((d) => (d.personal.email = v))} />
-            <TextField label="Phone" type="tel" value={profile.personal.phone}
-              onChange={(v) => update((d) => (d.personal.phone = v))} />
-            <SelectField label="Phone country code" value={profile.personal.phoneCountry}
+            <TextField
+              label="First name"
+              value={profile.personal.firstName}
+              onChange={(v) => update((d) => (d.personal.firstName = v))}
+            />
+            <TextField
+              label="Middle name"
+              value={profile.personal.middleName}
+              onChange={(v) => update((d) => (d.personal.middleName = v))}
+            />
+            <TextField
+              label="Last name"
+              value={profile.personal.lastName}
+              onChange={(v) => update((d) => (d.personal.lastName = v))}
+            />
+            <TextField
+              label="Preferred name (optional)"
+              value={profile.personal.preferredName}
+              onChange={(v) => update((d) => (d.personal.preferredName = v))}
+            />
+            <TextField
+              label="Email"
+              type="email"
+              value={profile.personal.email}
+              onChange={(v) => update((d) => (d.personal.email = v))}
+            />
+            <TextField
+              label="Phone"
+              type="tel"
+              value={profile.personal.phone}
+              onChange={(v) => update((d) => (d.personal.phone = v))}
+            />
+            <SelectField
+              label="Phone country code"
+              value={profile.personal.phoneCountry}
               onChange={(v) => update((d) => (d.personal.phoneCountry = v))}
-              options={PHONE_COUNTRY_OPTIONS} />
-            <TextField label="Street address" value={profile.personal.location.street}
-              onChange={(v) => update((d) => (d.personal.location.street = v))} />
-            <TextField label="Apt / suite / unit" value={profile.personal.location.street2}
-              onChange={(v) => update((d) => (d.personal.location.street2 = v))} />
-            <TextField label="City" value={profile.personal.location.city}
-              onChange={(v) => update((d) => (d.personal.location.city = v))} />
-            <TextField label="State" value={profile.personal.location.state}
-              onChange={(v) => update((d) => (d.personal.location.state = v))} />
-            <TextField label="Country" value={profile.personal.location.country}
-              onChange={(v) => update((d) => (d.personal.location.country = v))} />
-            <TextField label="Postal code" value={profile.personal.location.postalCode}
-              onChange={(v) => update((d) => (d.personal.location.postalCode = v))} />
+              options={PHONE_COUNTRY_OPTIONS}
+            />
+            <TextField
+              label="Street address"
+              value={profile.personal.location.street}
+              onChange={(v) => update((d) => (d.personal.location.street = v))}
+            />
+            <TextField
+              label="Apt / suite / unit"
+              value={profile.personal.location.street2}
+              onChange={(v) => update((d) => (d.personal.location.street2 = v))}
+            />
+            <TextField
+              label="City"
+              value={profile.personal.location.city}
+              onChange={(v) => update((d) => (d.personal.location.city = v))}
+            />
+            <TextField
+              label="State"
+              value={profile.personal.location.state}
+              onChange={(v) => update((d) => (d.personal.location.state = v))}
+            />
+            <TextField
+              label="Country"
+              value={profile.personal.location.country}
+              onChange={(v) => update((d) => (d.personal.location.country = v))}
+            />
+            <TextField
+              label="Postal code"
+              value={profile.personal.location.postalCode}
+              onChange={(v) => update((d) => (d.personal.location.postalCode = v))}
+            />
           </Section>
 
           <Section title="Links">
-            <TextField label="LinkedIn" type="url" value={profile.links.linkedin}
-              onChange={(v) => update((d) => (d.links.linkedin = v))} />
-            <TextField label="GitHub" type="url" value={profile.links.github}
-              onChange={(v) => update((d) => (d.links.github = v))} />
-            <TextField label="Portfolio" type="url" value={profile.links.portfolio}
-              onChange={(v) => update((d) => (d.links.portfolio = v))} />
-            <TextField label="Website" type="url" value={profile.links.website}
-              onChange={(v) => update((d) => (d.links.website = v))} />
+            <TextField
+              label="LinkedIn"
+              type="url"
+              value={profile.links.linkedin}
+              onChange={(v) => update((d) => (d.links.linkedin = v))}
+            />
+            <TextField
+              label="GitHub"
+              type="url"
+              value={profile.links.github}
+              onChange={(v) => update((d) => (d.links.github = v))}
+            />
+            <TextField
+              label="Portfolio"
+              type="url"
+              value={profile.links.portfolio}
+              onChange={(v) => update((d) => (d.links.portfolio = v))}
+            />
+            <TextField
+              label="Website"
+              type="url"
+              value={profile.links.website}
+              onChange={(v) => update((d) => (d.links.website = v))}
+            />
           </Section>
 
           <Section title="Work Authorization">
-            <CheckField label="Authorized to work in the US"
+            <CheckField
+              label="Authorized to work in the US"
               checked={profile.workAuth.usAuthorized}
-              onChange={(v) => update((d) => (d.workAuth.usAuthorized = v))} />
-            <CheckField label="Requires sponsorship"
+              onChange={(v) => update((d) => (d.workAuth.usAuthorized = v))}
+            />
+            <CheckField
+              label="Requires sponsorship"
               checked={profile.workAuth.sponsorshipNeeded}
-              onChange={(v) => update((d) => (d.workAuth.sponsorshipNeeded = v))} />
-            <SelectField label="Visa / status" value={profile.workAuth.visaType}
+              onChange={(v) => update((d) => (d.workAuth.sponsorshipNeeded = v))}
+            />
+            <SelectField
+              label="Visa / status"
+              value={profile.workAuth.visaType}
               onChange={(v) => update((d) => (d.workAuth.visaType = v as VisaType))}
               options={[
                 { value: "", label: "Not set" },
@@ -152,9 +218,13 @@ export function Options() {
                 { value: "F1_OPT", label: "F-1 / OPT" },
                 { value: "TN", label: "TN" },
                 { value: "OTHER", label: "Other" },
-              ]} />
-            <TextField label="Security clearance (optional)" value={profile.workAuth.clearance}
-              onChange={(v) => update((d) => (d.workAuth.clearance = v))} />
+              ]}
+            />
+            <TextField
+              label="Security clearance (optional)"
+              value={profile.workAuth.clearance}
+              onChange={(v) => update((d) => (d.workAuth.clearance = v))}
+            />
           </Section>
 
           <Section title="Experience">
@@ -178,9 +248,12 @@ export function Options() {
               + Add experience
             </button>
             <div className="mt-3">
-              <TextField label="Total years of experience" type="number"
+              <TextField
+                label="Total years of experience"
+                type="number"
                 value={String(profile.meta.totalYearsExp || "")}
-                onChange={(v) => update((d) => (d.meta.totalYearsExp = Number(v) || 0))} />
+                onChange={(v) => update((d) => (d.meta.totalYearsExp = Number(v) || 0))}
+              />
             </div>
           </Section>
 
@@ -207,10 +280,16 @@ export function Options() {
           </Section>
 
           <Section title="Preferences">
-            <TextField label="Expected salary" value={profile.preferences.salaryExpected}
-              onChange={(v) => update((d) => (d.preferences.salaryExpected = v))} />
-            <TextField label="Notice period" value={profile.preferences.noticePeriod}
-              onChange={(v) => update((d) => (d.preferences.noticePeriod = v))} />
+            <TextField
+              label="Expected salary"
+              value={profile.preferences.salaryExpected}
+              onChange={(v) => update((d) => (d.preferences.salaryExpected = v))}
+            />
+            <TextField
+              label="Notice period"
+              value={profile.preferences.noticePeriod}
+              onChange={(v) => update((d) => (d.preferences.noticePeriod = v))}
+            />
             <TextField
               label='How did you hear about us? (default for "How did you hear?" fields)'
               value={profile.preferences.hearAboutUs}
@@ -236,14 +315,22 @@ export function Options() {
               checked={profile.preferences.willingToTravel}
               onChange={(v) => update((d) => (d.preferences.willingToTravel = v))}
             />
-            <SelectField label="Remote preference" value={profile.preferences.remotePreference}
-              onChange={(v) => update((d) => (d.preferences.remotePreference = v as typeof d.preferences.remotePreference))}
+            <SelectField
+              label="Remote preference"
+              value={profile.preferences.remotePreference}
+              onChange={(v) =>
+                update(
+                  (d) =>
+                    (d.preferences.remotePreference = v as typeof d.preferences.remotePreference),
+                )
+              }
               options={[
                 { value: "", label: "Not set" },
                 { value: "remote", label: "Remote" },
                 { value: "hybrid", label: "Hybrid" },
                 { value: "onsite", label: "Onsite" },
-              ]} />
+              ]}
+            />
           </Section>
 
           <Section title="Voluntary Disclosures (Optional)">
@@ -252,7 +339,9 @@ export function Options() {
               filled in, these are never auto-filled into a form; Autofill only detects and shows
               the matching question so you can answer it yourself with one click.
             </p>
-            <SelectField label="Age range" value={profile.demographics.ageRange}
+            <SelectField
+              label="Age range"
+              value={profile.demographics.ageRange}
               onChange={(v) => update((d) => (d.demographics.ageRange = v))}
               options={[
                 { value: "", label: "Not set" },
@@ -264,8 +353,11 @@ export function Options() {
                 { value: "50-59", label: "50-59" },
                 { value: "60 or older", label: "60 or older" },
                 { value: "Prefer not to answer", label: "Prefer not to answer" },
-              ]} />
-            <SelectField label="Gender" value={profile.demographics.gender}
+              ]}
+            />
+            <SelectField
+              label="Gender"
+              value={profile.demographics.gender}
               onChange={(v) => update((d) => (d.demographics.gender = v))}
               options={[
                 { value: "", label: "Not set" },
@@ -273,8 +365,11 @@ export function Options() {
                 { value: "Male", label: "Male" },
                 { value: "Non-binary", label: "Non-binary" },
                 { value: "Prefer not to answer", label: "Prefer not to answer" },
-              ]} />
-            <SelectField label="Pronouns" value={profile.demographics.pronouns}
+              ]}
+            />
+            <SelectField
+              label="Pronouns"
+              value={profile.demographics.pronouns}
               onChange={(v) => update((d) => (d.demographics.pronouns = v))}
               options={[
                 { value: "", label: "Not set" },
@@ -283,8 +378,10 @@ export function Options() {
                 { value: "they/them", label: "they/them" },
                 { value: "Other", label: "Other" },
                 { value: "Prefer not to answer", label: "Prefer not to answer" },
-              ]} />
-            <SelectField label="Do you identify as a member of the LGBTQIA+ community?"
+              ]}
+            />
+            <SelectField
+              label="Do you identify as a member of the LGBTQIA+ community?"
               value={profile.demographics.lgbtqia}
               onChange={(v) => update((d) => (d.demographics.lgbtqia = v))}
               options={[
@@ -292,7 +389,8 @@ export function Options() {
                 { value: "Yes", label: "Yes" },
                 { value: "No", label: "No" },
                 { value: "Prefer not to answer", label: "Prefer not to answer" },
-              ]} />
+              ]}
+            />
             <div className="col-span-2">
               <span className="mb-1 block text-xs font-medium text-gray-600">
                 Racial, ethnic and origin identities (select all that apply)
@@ -341,8 +439,10 @@ export function Options() {
           </Section>
 
           <div className="flex items-center gap-3">
-            <button onClick={onSave}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            <button
+              onClick={onSave}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
               Save profile
             </button>
             {saved && <span className="text-sm text-green-600">Saved ✓</span>}
@@ -363,7 +463,11 @@ interface ResumeUploadSectionProps {
   onFileNameChange: (name: string) => void;
 }
 
-function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: ResumeUploadSectionProps) {
+function ResumeUploadSection({
+  resumeFileName,
+  onParsed,
+  onFileNameChange,
+}: ResumeUploadSectionProps) {
   const [status, setStatus] = useState<"idle" | "parsing" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [backendUrl, setBackendUrl] = useState<string>("http://localhost:8000");
@@ -390,10 +494,11 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
       setStatus("done");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Parse failed";
-      const isConnectionError = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("timed out");
-      const saved = stored
-        ? "Resume saved — it will still be auto-attached to applications. "
-        : "";
+      const isConnectionError =
+        msg.includes("Failed to fetch") ||
+        msg.includes("NetworkError") ||
+        msg.includes("timed out");
+      const saved = stored ? "Resume saved — it will still be auto-attached to applications. " : "";
       setErrorMsg(
         isConnectionError
           ? `${saved}Profile auto-fill from the resume needs the backend: cd backend && source venv/bin/activate && uvicorn app.main:app --reload`
@@ -407,15 +512,13 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
     <div className="mb-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
       <div className="mb-2 flex items-center justify-between">
         <span className="text-sm font-medium text-gray-700">Resume</span>
-        {resumeFileName && (
-          <span className="text-xs text-gray-500">{resumeFileName}</span>
-        )}
+        {resumeFileName && <span className="text-xs text-gray-500">{resumeFileName}</span>}
       </div>
       <p className="mb-3 text-xs text-gray-500">
-        Upload a PDF or DOCX to automatically populate experience, education, and skills.
-        Connects to the local backend (<code>localhost:8000</code>). With an{" "}
-        <code>ANTHROPIC_API_KEY</code> in <code>backend/.env</code> it does full AI extraction;
-        without one it still extracts name, email, phone, and links via regex.
+        Upload a PDF or DOCX to automatically populate experience, education, and skills. Connects
+        to the local backend (<code>localhost:8000</code>). With an <code>ANTHROPIC_API_KEY</code>{" "}
+        in <code>backend/.env</code> it does full AI extraction; without one it still extracts name,
+        email, phone, and links via regex.
       </p>
       <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
         <input
@@ -426,14 +529,16 @@ function ResumeUploadSection({ resumeFileName, onParsed, onFileNameChange }: Res
           className="hidden"
           onChange={(e) => void onFile(e.target.files?.[0])}
         />
-        {status === "parsing" ? "Parsing…" : resumeFileName ? "Replace resume" : "Choose resume file"}
+        {status === "parsing"
+          ? "Parsing…"
+          : resumeFileName
+            ? "Replace resume"
+            : "Choose resume file"}
       </label>
       {status === "done" && (
         <span className="ml-3 text-sm text-green-600">Parsed ✓ — review fields below</span>
       )}
-      {status === "error" && (
-        <p className="mt-2 text-sm text-red-600">{errorMsg}</p>
-      )}
+      {status === "error" && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
     </div>
   );
 }
@@ -466,8 +571,16 @@ function ExperienceEntry({ exp, index, onUpdate, onRemove }: ExperienceEntryProp
       <div className="grid grid-cols-2 gap-2">
         <TextField label="Company" value={exp.company} onChange={(v) => onUpdate({ company: v })} />
         <TextField label="Title" value={exp.title} onChange={(v) => onUpdate({ title: v })} />
-        <TextField label="Start date (YYYY-MM)" value={exp.startDate} onChange={(v) => onUpdate({ startDate: v })} />
-        <TextField label="End date (YYYY-MM or blank)" value={exp.endDate} onChange={(v) => onUpdate({ endDate: v })} />
+        <TextField
+          label="Start date (YYYY-MM)"
+          value={exp.startDate}
+          onChange={(v) => onUpdate({ startDate: v })}
+        />
+        <TextField
+          label="End date (YYYY-MM or blank)"
+          value={exp.endDate}
+          onChange={(v) => onUpdate({ endDate: v })}
+        />
       </div>
       <div className="mt-2">
         <CheckField
@@ -509,7 +622,11 @@ function EducationEntry({ edu, index, onUpdate, onRemove }: EducationEntryProps)
         <TextField label="School" value={edu.school} onChange={(v) => onUpdate({ school: v })} />
         <TextField label="Degree" value={edu.degree} onChange={(v) => onUpdate({ degree: v })} />
         <TextField label="Major" value={edu.major} onChange={(v) => onUpdate({ major: v })} />
-        <TextField label="Graduation year" value={edu.year} onChange={(v) => onUpdate({ year: v })} />
+        <TextField
+          label="Graduation year"
+          value={edu.year}
+          onChange={(v) => onUpdate({ year: v })}
+        />
       </div>
     </div>
   );
@@ -546,7 +663,9 @@ function SettingsPanel() {
     setTest({ status: "testing" });
     const result = await checkBackendHealth(url.trim() || "http://localhost:8000");
     setTest(
-      result.ok ? { status: "ok", aiEnabled: result.aiEnabled } : { status: "error", error: result.error },
+      result.ok
+        ? { status: "ok", aiEnabled: result.aiEnabled }
+        : { status: "error", error: result.error },
     );
   };
 
@@ -554,13 +673,18 @@ function SettingsPanel() {
     <div>
       <h2 className="mb-1 text-lg font-semibold">AI backend</h2>
       <p className="mb-4 text-sm text-gray-500">
-        Set a backend URL to enable resume parsing and AI free-text answers.
-        Defaults to <code>http://localhost:8000</code> — start the local server with:
+        Set a backend URL to enable resume parsing and AI free-text answers. Defaults to{" "}
+        <code>http://localhost:8000</code> — start the local server with:
         <code className="ml-1 rounded bg-gray-100 px-1">uvicorn app.main:app --reload</code>
         (from the <code>backend/</code> folder). Add your <code>ANTHROPIC_API_KEY</code> to
         <code className="ml-1 rounded bg-gray-100 px-1">backend/.env</code> for AI-powered parsing.
       </p>
-      <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="http://localhost:8000" />
+      <TextField
+        label="Backend URL"
+        value={url}
+        onChange={setUrl}
+        placeholder="http://localhost:8000"
+      />
       <div className="mt-2 flex items-center gap-3">
         <button
           onClick={onTestConnection}
@@ -571,7 +695,10 @@ function SettingsPanel() {
         </button>
         {test.status === "ok" && (
           <span className="text-sm text-green-600">
-            Connected ✓ {test.aiEnabled ? "(AI enabled)" : "(AI keys not configured — deterministic fill still works)"}
+            Connected ✓{" "}
+            {test.aiEnabled
+              ? "(AI enabled)"
+              : "(AI keys not configured — deterministic fill still works)"}
           </span>
         )}
         {test.status === "error" && (
@@ -586,7 +713,10 @@ function SettingsPanel() {
         />
       </div>
       <div className="mt-4 flex items-center gap-3">
-        <button onClick={onSave} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white">
+        <button
+          onClick={onSave}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white"
+        >
           Save settings
         </button>
         {saved && <span className="text-sm text-green-600">Saved ✓</span>}
@@ -648,10 +778,28 @@ function ReferenceEntry({ reference, index, onUpdate, onRemove }: ReferenceEntry
       </div>
       <div className="grid grid-cols-2 gap-2">
         <TextField label="Name" value={reference.name} onChange={(v) => onUpdate({ name: v })} />
-        <TextField label="Relationship" value={reference.relationship} onChange={(v) => onUpdate({ relationship: v })} />
-        <TextField label="Company" value={reference.company} onChange={(v) => onUpdate({ company: v })} />
-        <TextField label="Reference email" type="email" value={reference.email} onChange={(v) => onUpdate({ email: v })} />
-        <TextField label="Reference phone" type="tel" value={reference.phone} onChange={(v) => onUpdate({ phone: v })} />
+        <TextField
+          label="Relationship"
+          value={reference.relationship}
+          onChange={(v) => onUpdate({ relationship: v })}
+        />
+        <TextField
+          label="Company"
+          value={reference.company}
+          onChange={(v) => onUpdate({ company: v })}
+        />
+        <TextField
+          label="Reference email"
+          type="email"
+          value={reference.email}
+          onChange={(v) => onUpdate({ email: v })}
+        />
+        <TextField
+          label="Reference phone"
+          type="tel"
+          value={reference.phone}
+          onChange={(v) => onUpdate({ phone: v })}
+        />
       </div>
     </div>
   );

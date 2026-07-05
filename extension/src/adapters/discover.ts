@@ -85,15 +85,16 @@ export function discoverWithin(root: ParentNode = document): FieldHandle[] {
   const radioGroups = new Map<string, HTMLInputElement[]>();
 
   collectRoots(root).forEach((scope, rootIndex) => {
-    const controls = Array.from(
-      scope.querySelectorAll<HTMLElement>(CONTROL_SELECTOR),
-    ).filter(isFillable);
+    const controls = Array.from(scope.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)).filter(
+      isFillable,
+    );
 
     for (const el of controls) {
       // Non-input triggers must prove they're a fillable listbox composite —
       // otherwise every menu button on the page would become a "field".
       if (
-        (el.tagName === "BUTTON" || (el.tagName !== "INPUT" && el.getAttribute("role") === "combobox")) &&
+        (el.tagName === "BUTTON" ||
+          (el.tagName !== "INPUT" && el.getAttribute("role") === "combobox")) &&
         !popupOptionsPanel(el)
       ) {
         continue;

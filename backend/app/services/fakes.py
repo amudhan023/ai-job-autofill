@@ -3,6 +3,7 @@
 Importable from tests (and usable in local dev) so AI service logic can be
 exercised deterministically without network or keys.
 """
+
 from __future__ import annotations
 
 import hashlib

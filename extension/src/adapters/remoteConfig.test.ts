@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import {
-  loadAdapterConfig,
-  refreshConfig,
-  BUNDLED_CONFIG,
-} from "./remoteConfig";
+import { loadAdapterConfig, refreshConfig, BUNDLED_CONFIG } from "./remoteConfig";
 
 describe("remote adapter config", () => {
   afterEach(() => {
@@ -21,7 +17,11 @@ describe("remote adapter config", () => {
       storage: { local: { set: (i: Record<string, unknown>) => Promise<void> } };
     };
     await chrome.storage.local.set({
-      adapterConfig: { version: 99, updatedAt: "2027-01-01", adapters: [{ platform: "greenhouse" }] },
+      adapterConfig: {
+        version: 99,
+        updatedAt: "2027-01-01",
+        adapters: [{ platform: "greenhouse" }],
+      },
     });
     const cfg = await loadAdapterConfig();
     expect(cfg.version).toBe(99);

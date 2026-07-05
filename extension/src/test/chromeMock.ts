@@ -6,25 +6,38 @@ import { vi } from "vitest";
  */
 export interface ChromeMock {
   _store: Record<string, unknown>;
-  _messageHandlers: Array<(msg: unknown, sender: unknown, send: (r: unknown) => void) => boolean | void>;
+  _messageHandlers: Array<
+    (msg: unknown, sender: unknown, send: (r: unknown) => void) => boolean | void
+  >;
   _changeHandlers: Array<(changes: Record<string, { newValue?: unknown }>, area: string) => void>;
   storage: {
     local: {
       get: (key: string) => Promise<Record<string, unknown>>;
       set: (items: Record<string, unknown>) => Promise<void>;
     };
-    onChanged: { addListener: (cb: (changes: Record<string, { newValue?: unknown }>, area: string) => void) => void };
+    onChanged: {
+      addListener: (
+        cb: (changes: Record<string, { newValue?: unknown }>, area: string) => void,
+      ) => void;
+    };
   };
   runtime: {
     sendMessage: ReturnType<typeof vi.fn>;
-    onMessage: { addListener: (cb: (msg: unknown, sender: unknown, send: (r: unknown) => void) => boolean | void) => void };
+    onMessage: {
+      addListener: (
+        cb: (msg: unknown, sender: unknown, send: (r: unknown) => void) => boolean | void,
+      ) => void;
+    };
     onInstalled: { addListener: (cb: () => void) => void };
     openOptionsPage: ReturnType<typeof vi.fn>;
   };
   tabs: {
     query: ReturnType<typeof vi.fn>;
     sendMessage: ReturnType<typeof vi.fn>;
-    onActivated: { addListener: ReturnType<typeof vi.fn>; removeListener: ReturnType<typeof vi.fn> };
+    onActivated: {
+      addListener: ReturnType<typeof vi.fn>;
+      removeListener: ReturnType<typeof vi.fn>;
+    };
     onUpdated: { addListener: ReturnType<typeof vi.fn>; removeListener: ReturnType<typeof vi.fn> };
   };
   sidePanel: {

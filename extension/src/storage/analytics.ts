@@ -27,8 +27,9 @@ export function computeAnalytics(
   for (const r of records) {
     platformCounts.set(r.platform, (platformCounts.get(r.platform) ?? 0) + 1);
   }
-  const byPlatform = Array.from(platformCounts, ([platform, count]) => ({ platform, count }))
-    .sort((a, b) => b.count - a.count);
+  const byPlatform = Array.from(platformCounts, ([platform, count]) => ({ platform, count })).sort(
+    (a, b) => b.count - a.count,
+  );
 
   const day = 24 * 60 * 60 * 1000;
   const last7Days = records.filter((r) => now - r.date <= 7 * day).length;

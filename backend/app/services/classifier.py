@@ -5,6 +5,7 @@ When an LLM is configured it's used for nuanced cases; a deterministic keyword
 classifier is always available as a fast, free, offline fallback (and is what
 runs in tests and without keys).
 """
+
 from __future__ import annotations
 
 import re

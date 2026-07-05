@@ -3,11 +3,41 @@ import { scoreSignals, inferType } from "./types";
 
 describe("scoreSignals", () => {
   it("weights signals URL30 / DOM40 / HTML20 / CSS10", () => {
-    expect(scoreSignals({ urlMatch: true, domFingerprint: false, htmlStructure: false, cssHints: false })).toBe(30);
-    expect(scoreSignals({ urlMatch: false, domFingerprint: true, htmlStructure: false, cssHints: false })).toBe(40);
-    expect(scoreSignals({ urlMatch: false, domFingerprint: false, htmlStructure: true, cssHints: false })).toBe(20);
-    expect(scoreSignals({ urlMatch: false, domFingerprint: false, htmlStructure: false, cssHints: true })).toBe(10);
-    expect(scoreSignals({ urlMatch: true, domFingerprint: true, htmlStructure: true, cssHints: true })).toBe(100);
+    expect(
+      scoreSignals({
+        urlMatch: true,
+        domFingerprint: false,
+        htmlStructure: false,
+        cssHints: false,
+      }),
+    ).toBe(30);
+    expect(
+      scoreSignals({
+        urlMatch: false,
+        domFingerprint: true,
+        htmlStructure: false,
+        cssHints: false,
+      }),
+    ).toBe(40);
+    expect(
+      scoreSignals({
+        urlMatch: false,
+        domFingerprint: false,
+        htmlStructure: true,
+        cssHints: false,
+      }),
+    ).toBe(20);
+    expect(
+      scoreSignals({
+        urlMatch: false,
+        domFingerprint: false,
+        htmlStructure: false,
+        cssHints: true,
+      }),
+    ).toBe(10);
+    expect(
+      scoreSignals({ urlMatch: true, domFingerprint: true, htmlStructure: true, cssHints: true }),
+    ).toBe(100);
   });
 });
 

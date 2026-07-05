@@ -9,6 +9,7 @@ application halts at `AWAIT_USER_REVIEW`; only an explicit user approval advance
 it to `SUBMITTED_BY_USER`. This keeps the zero-mutation / Chrome-Web-Store
 compliance guarantee at the orchestration layer too.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

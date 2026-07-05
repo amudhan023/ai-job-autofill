@@ -1,4 +1,5 @@
 """No-LLM regex/heuristic resume fallback — experience/education/skills extraction."""
+
 from __future__ import annotations
 
 from app.services.resume import _regex_parse
@@ -131,7 +132,13 @@ Databases: MySQL, PostgreSQL, Redis
 """
     profile = _regex_parse(text)
     assert profile.skills.technical == [
-        "Java", "Scala", "Python", "Spring Boot", "MySQL", "PostgreSQL", "Redis",
+        "Java",
+        "Scala",
+        "Python",
+        "Spring Boot",
+        "MySQL",
+        "PostgreSQL",
+        "Redis",
     ]
 
 

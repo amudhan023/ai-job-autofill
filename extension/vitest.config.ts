@@ -20,12 +20,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html"],
       include: ["src/**/*.{ts,tsx}"],
-      exclude: [
-        "src/**/*.{test,spec}.{ts,tsx}",
-        "src/test/**",
-        "src/**/main.tsx",
-        "src/**/*.d.ts",
-      ],
+      exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/test/**", "src/**/main.tsx", "src/**/*.d.ts"],
       // Modest floor to catch regressions, not to chase 100% — set below the
       // current baseline with headroom, not tuned to the exact figure.
       thresholds: {

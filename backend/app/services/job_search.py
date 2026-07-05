@@ -8,6 +8,7 @@ separate implementations without touching the orchestration logic.
 Match scoring is deterministic (skill overlap + seniority/years signals), so the
 "jobs matching my profile" feature works offline and is fully testable.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

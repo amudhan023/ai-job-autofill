@@ -50,8 +50,12 @@ export function Dashboard({ records }: DashboardProps) {
       <ul className="space-y-1 text-sm">
         {data.slice(0, 10).map((r) => (
           <li key={r.id} className="flex justify-between">
-            <span className="truncate capitalize">{r.company} · {r.platform}</span>
-            <span className="text-gray-500">{r.fieldsFilled}/{r.fieldsTotal}</span>
+            <span className="truncate capitalize">
+              {r.company} · {r.platform}
+            </span>
+            <span className="text-gray-500">
+              {r.fieldsFilled}/{r.fieldsTotal}
+            </span>
           </li>
         ))}
       </ul>

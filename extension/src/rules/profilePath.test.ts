@@ -11,7 +11,14 @@ describe("resolveProfilePath", () => {
 
   it("resolves array index paths", () => {
     const p = emptyProfile();
-    p.experience.push({ company: "Acme", title: "SWE", startDate: "", endDate: "", current: true, bullets: [] });
+    p.experience.push({
+      company: "Acme",
+      title: "SWE",
+      startDate: "",
+      endDate: "",
+      current: true,
+      bullets: [],
+    });
     expect(resolveProfilePath(p, "experience[0].company")).toBe("Acme");
     expect(resolveProfilePath(p, "experience[0].title")).toBe("SWE");
   });

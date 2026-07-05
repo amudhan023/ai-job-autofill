@@ -1,6 +1,7 @@
 """Phase 5 job-matching endpoint. Stateless ranking of supplied postings against
 a candidate profile (deterministic; no external API needed). Real provider
 search (LinkedIn/Indeed) plugs in behind JobProvider when credentials exist."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter

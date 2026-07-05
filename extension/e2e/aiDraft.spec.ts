@@ -1,6 +1,12 @@
 import { test, expect, type BrowserContext, type Worker } from "@playwright/test";
 import { createServer, type Server } from "node:http";
-import { BASE, draftFieldViaExtension, fillViaExtension, launchExtension, seedLocalStorage } from "./helpers";
+import {
+  BASE,
+  draftFieldViaExtension,
+  fillViaExtension,
+  launchExtension,
+  seedLocalStorage,
+} from "./helpers";
 
 /**
  * AI-draft flow against a stubbed backend (M5): popup button -> content
@@ -55,7 +61,16 @@ test.beforeEach(async () => {
     await chrome.storage.local.remove("answerCache");
   });
   await seedLocalStorage(worker, {
-    userProfile: { personal: {}, links: {}, workAuth: {}, experience: [], education: [], skills: {}, preferences: {}, meta: {} },
+    userProfile: {
+      personal: {},
+      links: {},
+      workAuth: {},
+      experience: [],
+      education: [],
+      skills: {},
+      preferences: {},
+      meta: {},
+    },
     backendUrl: `http://localhost:${STUB_PORT}`,
   });
 });

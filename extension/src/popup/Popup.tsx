@@ -197,13 +197,13 @@ function FillSummary({ result }: { result: FillResult }) {
             <span className="flex shrink-0 items-center gap-1">
               {/* No AI drafts into file inputs (e.g. a cover-letter UPLOAD
                   matched by the coverLetter rule) — text can't go there. */}
-              {m.flags.includes("ai_generate") && m.type !== "file" && (
-                m.ruleId === "coverLetter" ? (
+              {m.flags.includes("ai_generate") &&
+                m.type !== "file" &&
+                (m.ruleId === "coverLetter" ? (
                   <CoverLetterButton fieldId={m.fieldId} url={result.url} />
                 ) : (
                   <AiDraftButton fieldId={m.fieldId} />
-                )
-              )}
+                ))}
               <ConfidenceBadge match={m} />
             </span>
           </li>
@@ -237,7 +237,11 @@ function AiDraftButton({ fieldId }: { fieldId: string }) {
     <button
       onClick={onDraft}
       disabled={state === "working"}
-      title={state === "error" ? "Draft failed — is the AI backend configured in Options → Settings?" : "Generate a draft answer with AI"}
+      title={
+        state === "error"
+          ? "Draft failed — is the AI backend configured in Options → Settings?"
+          : "Generate a draft answer with AI"
+      }
       className={`rounded border px-1.5 py-0.5 text-[11px] ${
         state === "error"
           ? "border-red-300 text-red-600"

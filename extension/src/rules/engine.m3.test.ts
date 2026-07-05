@@ -97,10 +97,20 @@ describe("M3 rules — references", () => {
     p.personal.email = "me@example.com";
     p.personal.phone = "555-0100";
     p.references = [
-      { name: "Jane Boss", relationship: "Manager", company: "Acme", email: "jane@acme.com", phone: "555-0199" },
+      {
+        name: "Jane Boss",
+        relationship: "Manager",
+        company: "Acme",
+        email: "jane@acme.com",
+        phone: "555-0199",
+      },
     ];
-    expect(evaluateField(field({ label: "Reference Email", type: "email" }), p).value).toBe("jane@acme.com");
-    expect(evaluateField(field({ label: "Reference Phone", type: "tel" }), p).value).toBe("555-0199");
+    expect(evaluateField(field({ label: "Reference Email", type: "email" }), p).value).toBe(
+      "jane@acme.com",
+    );
+    expect(evaluateField(field({ label: "Reference Phone", type: "tel" }), p).value).toBe(
+      "555-0199",
+    );
     expect(evaluateField(field({ label: "Reference Name" }), p).value).toBe("Jane Boss");
     expect(evaluateField(field({ label: "Relationship to you" }), p).value).toBe("Manager");
   });
@@ -127,7 +137,16 @@ describe("profile migration", () => {
       },
       links: { linkedin: "in/a", github: "", portfolio: "", website: "" },
       workAuth: { usAuthorized: true, sponsorshipNeeded: false, visaType: "H1B" },
-      experience: [{ company: "Acme", title: "SWE", startDate: "2020-01", endDate: "", current: true, bullets: [] }],
+      experience: [
+        {
+          company: "Acme",
+          title: "SWE",
+          startDate: "2020-01",
+          endDate: "",
+          current: true,
+          bullets: [],
+        },
+      ],
       education: [],
       skills: { technical: ["TS"], languages: [], certifications: [] },
       preferences: {
