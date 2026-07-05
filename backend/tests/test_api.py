@@ -1,4 +1,5 @@
 """Backend API tests (skeleton phase). Uses FastAPI's TestClient."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient

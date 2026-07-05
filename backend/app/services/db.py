@@ -4,6 +4,7 @@ and optional RAG chunk persistence for `VectorStore` (app/services/rag.py).
 Postgres/pgvector is opt-in via `DATABASE_URL` — same engine, no interface
 changes; just install a Postgres driver alongside it.
 """
+
 from __future__ import annotations
 
 import struct

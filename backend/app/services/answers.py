@@ -1,4 +1,5 @@
 """Free-text answer generation (Phase 3) — RAG + STAR for behavioral questions."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

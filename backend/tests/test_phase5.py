@@ -1,4 +1,5 @@
 """Phase 5 — job matching + orchestration tests (deterministic)."""
+
 from __future__ import annotations
 
 import pytest
@@ -20,6 +21,7 @@ def job(**kw) -> JobPosting:
 
 
 # ---- matching ------------------------------------------------------------- #
+
 
 def test_match_score_rewards_skill_overlap() -> None:
     cand = CandidateProfile(skills=["Kafka", "Go"], years_experience=18)
@@ -53,6 +55,7 @@ def test_fake_provider_search_filters_by_query() -> None:
 
 
 # ---- orchestration -------------------------------------------------------- #
+
 
 def test_build_plan_selects_top_matches() -> None:
     cand = CandidateProfile(skills=["Kafka", "Go"], years_experience=18)

@@ -1,4 +1,5 @@
 """AI endpoints: classification, JD extraction, and free-text answer generation."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter

@@ -2,6 +2,7 @@
 conftest.py first), so an in-memory DB is in place before app.core.config's
 settings singleton or app.services.db's engine singleton are ever created —
 tests never write a database file to disk."""
+
 import os
 
 import pytest

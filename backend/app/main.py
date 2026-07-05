@@ -3,6 +3,7 @@
 Phase 1 skeleton: profile CRUD (in-memory), resume parse + AI endpoints stubbed.
 Boots without any API keys so the service is runnable and testable immediately.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI

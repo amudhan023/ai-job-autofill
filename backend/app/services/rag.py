@@ -8,6 +8,7 @@ Existing callers that don't pass `user_id` (e.g. app/api/ai.py's per-request
 ephemeral store) are unaffected — nothing is persisted unless a user_id is
 given.
 """
+
 from __future__ import annotations
 
 import math

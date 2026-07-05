@@ -1,4 +1,5 @@
 """Profile CRUD, backed by SQLite (or Postgres via DATABASE_URL) — app/services/db.py."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException

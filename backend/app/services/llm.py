@@ -5,6 +5,7 @@ directly. Real implementations lazily import the Anthropic / Voyage SDKs so the
 app boots (and tests run) without them installed or keys configured. Tests inject
 `FakeLLM` / `FakeEmbeddings`.
 """
+
 from __future__ import annotations
 
 import json

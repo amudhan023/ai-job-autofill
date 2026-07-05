@@ -1,4 +1,5 @@
 """Application settings. Loaded from environment / .env (see .env.example)."""
+
 from __future__ import annotations
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,7 +11,9 @@ class Settings(BaseSettings):
     env: str = "dev"
     # Regex of allowed CORS origins. Must be a regex (not literal) so the
     # extension's dynamic origin `chrome-extension://<id>` actually matches.
-    cors_origin_regex: str = r"chrome-extension://.*|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?"
+    cors_origin_regex: str = (
+        r"chrome-extension://.*|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?"
+    )
 
     # AI keys (optional; AI endpoints are stubbed until set).
     anthropic_api_key: str = ""

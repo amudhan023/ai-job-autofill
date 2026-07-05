@@ -1,4 +1,5 @@
 """Phase 3 AI service tests — deterministic via FakeLLM / FakeEmbeddings."""
+
 from __future__ import annotations
 
 import json
@@ -11,6 +12,7 @@ from app.services.rag import VectorStore, chunk_resume, cosine
 from app.services.resume import parse_resume_text
 
 # ---- classifier ----------------------------------------------------------- #
+
 
 def test_keyword_classifier_routes_sensitive_categories_first() -> None:
     assert classify_keyword("Are you authorized to work in the US?") == "VISA_WORK_AUTH"
@@ -40,6 +42,7 @@ def test_classifier_falls_back_when_llm_returns_garbage() -> None:
 
 # ---- resume parse --------------------------------------------------------- #
 
+
 def test_parse_resume_text_validates_into_profile() -> None:
     payload = {
         "personal": {"firstName": "Amudhan", "lastName": "Shanmugam", "email": "a@x.com"},
@@ -54,6 +57,7 @@ def test_parse_resume_text_validates_into_profile() -> None:
 
 
 # ---- JD extraction -------------------------------------------------------- #
+
 
 def test_extract_jd_text_parses_json() -> None:
     payload = {"requiredSkills": ["Kafka", "Go"], "yearsExp": 8, "seniorityLevel": "Staff"}
@@ -71,6 +75,7 @@ def test_skill_gap_is_case_insensitive() -> None:
 
 
 # ---- RAG ------------------------------------------------------------------ #
+
 
 def test_cosine_bounds() -> None:
     assert cosine([1, 0], [1, 0]) == 1.0
@@ -94,6 +99,7 @@ def test_vector_store_retrieves_most_relevant_chunk() -> None:
 
 
 # ---- answer generation ---------------------------------------------------- #
+
 
 def test_generate_behavioral_answer_with_rag() -> None:
     llm = FakeLLM(default="STAR answer here.")

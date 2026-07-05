@@ -1,4 +1,5 @@
 """Job-description understanding (Phase 3)."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

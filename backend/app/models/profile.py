@@ -3,6 +3,7 @@
 Kept in sync deliberately: the backend is the optional sync/RAG layer for the
 same profile shape the extension stores locally.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field

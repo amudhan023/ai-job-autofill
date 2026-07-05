@@ -2,6 +2,7 @@
 
 These guard the fixes in the fast unit suite (the live HTTP versions live in
 extension/integration/contract.spec.ts)."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient

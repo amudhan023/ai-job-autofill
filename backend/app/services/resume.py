@@ -7,6 +7,7 @@ extractor that picks up email, phone, links, name, and — for reasonably
 conventional resume layouts — experience, education, and skills sections too.
 Useful immediately without requiring an API key.
 """
+
 from __future__ import annotations
 
 import re
@@ -90,22 +91,46 @@ def parse_resume_text(text: str, llm: LLM) -> UserProfile:
 
 _SECTION_ALIASES: dict[str, list[str]] = {
     "experience": [
-        "experience", "work experience", "professional experience",
-        "employment history", "work history", "relevant experience",
+        "experience",
+        "work experience",
+        "professional experience",
+        "employment history",
+        "work history",
+        "relevant experience",
     ],
     "education": ["education", "academic background", "education  training"],
     "skills": [
-        "skills", "technical skills", "core competencies", "skills and tools",
-        "technologies", "technical proficiencies",
+        "skills",
+        "technical skills",
+        "core competencies",
+        "skills and tools",
+        "technologies",
+        "technical proficiencies",
     ],
 }
 _BOUNDARY_ONLY_HEADERS = [
-    "projects", "certifications", "certificates", "summary", "objective",
-    "professional summary", "awards", "publications", "references",
-    "languages", "volunteer experience", "volunteering", "interests",
-    "activities", "additional information", "honors", "honors  awards",
-    "coursework", "relevant coursework", "professional development",
-    "contact", "contact information",
+    "projects",
+    "certifications",
+    "certificates",
+    "summary",
+    "objective",
+    "professional summary",
+    "awards",
+    "publications",
+    "references",
+    "languages",
+    "volunteer experience",
+    "volunteering",
+    "interests",
+    "activities",
+    "additional information",
+    "honors",
+    "honors  awards",
+    "coursework",
+    "relevant coursework",
+    "professional development",
+    "contact",
+    "contact information",
 ]
 _ALL_HEADER_NAMES = {a for aliases in _SECTION_ALIASES.values() for a in aliases} | set(
     _BOUNDARY_ONLY_HEADERS
@@ -143,8 +168,18 @@ def _find_sections(lines: list[str]) -> dict[str, tuple[int, int]]:
 
 
 _MONTHS = {
-    "jan": "01", "feb": "02", "mar": "03", "apr": "04", "may": "05", "jun": "06",
-    "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12",
+    "jan": "01",
+    "feb": "02",
+    "mar": "03",
+    "apr": "04",
+    "may": "05",
+    "jun": "06",
+    "jul": "07",
+    "aug": "08",
+    "sep": "09",
+    "oct": "10",
+    "nov": "11",
+    "dec": "12",
 }
 _DATE_RANGE_RE = re.compile(
     r"(?P<start_mon>[A-Za-z]{3,9}\.?\s+|\d{1,2}[/\-])?(?P<start_year>\d{4})"
@@ -335,9 +370,7 @@ def _regex_parse(text: str) -> UserProfile:
         profile.personal.email = m.group(0)
 
     # Phone — US + international formats
-    m = re.search(
-        r"(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}", text
-    )
+    m = re.search(r"(?:\+?1[\s.\-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}", text)
     if m:
         profile.personal.phone = m.group(0).strip()
 
@@ -403,9 +436,7 @@ def _regex_parse(text: str) -> UserProfile:
     return profile
 
 
-async def parse_resume(
-    filename: str, content: bytes, llm: LLM | None = None
-) -> UserProfile:
+async def parse_resume(filename: str, content: bytes, llm: LLM | None = None) -> UserProfile:
     # Extract (and thereby validate) the file first, so a malformed upload always
     # fails fast with a clear error — regardless of whether AI is configured —
     # rather than silently returning an empty profile.
