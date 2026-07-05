@@ -7,12 +7,6 @@ import time
 import json
 from datetime import datetime, timedelta
 
-try:
-    import pexpect
-except ImportError:
-    print("Missing dependency: pexpect. Install it with:\n    python3 -m pip install pexpect")
-    raise SystemExit(1)
-
 # =========================================================
 # PROJECT ROOT = where you run the script
 # =========================================================
@@ -46,6 +40,23 @@ Then exit.
 RETRY_DELAY_SECONDS = 30
 SUCCESS_DELAY_SECONDS = 2
 CLAUDE_TIMEOUT_SECONDS = 1800  # a full backlog task (tests, PR, CI) can take a while
+
+# Headless (-p/--print) runs have no human to answer permission prompts, so
+# tool use has to be pre-approved. Scoped to what the autodev per-task
+# workflow (docs/BACKLOG.md -> .claude/skills/autodev/SKILL.md) actually
+# needs, rather than a blanket --dangerously-skip-permissions bypass.
+PERMISSION_MODE = "acceptEdits"
+ALLOWED_TOOLS = [
+    "Read", "Write", "Edit", "Glob", "Grep",
+    "Bash(git *)",
+    "Bash(gh *)",
+    "Bash(npm *)",
+    "Bash(npx *)",
+    "Bash(cd *)",
+    "Bash(venv/bin/python *)",
+    "Bash(venv/bin/pip *)",
+    "Bash(docker *)",
+]
 
 TOKEN_RESET_TIMES = [
     "02:00",
@@ -153,34 +164,34 @@ def is_token_limit(output: str):
 # =========================================================
 
 def run_claude(state):
-    log("🚀 Launching Claude (PTY controlled session)...")
+    log("🚀 Launching Claude (headless -p session)...")
 
-    child = None
+    command = [
+        "claude",
+        "-p", BOOTSTRAP_PROMPT.strip(),
+        "--permission-mode", PERMISSION_MODE,
+        "--allowedTools", *ALLOWED_TOOLS,
+    ]
+
     try:
-        child = pexpect.spawn("claude", cwd=PROJECT_DIR, encoding="utf-8")
+        result = subprocess.run(
+            command,
+            cwd=PROJECT_DIR,
+            capture_output=True,
+            text=True,
+            timeout=CLAUDE_TIMEOUT_SECONDS,
+        )
+        output = (result.stdout or "") + (result.stderr or "")
+        return result.returncode, output
 
-        # Give Claude time to initialize
-        time.sleep(2)
-
-        # Send the bootstrap instructions as a single message. The prompt
-        # itself tells Claude to exit once the task is done, so we just
-        # wait for the session to end instead of forcing an "exit" that
-        # could race with Claude still working on the task.
-        child.sendline(BOOTSTRAP_PROMPT.strip())
-
-        child.expect(pexpect.EOF, timeout=CLAUDE_TIMEOUT_SECONDS)
-
-        output = child.before
-
-        return 0, output
-
-    except pexpect.exceptions.TIMEOUT:
+    except subprocess.TimeoutExpired as e:
         log(f"⏱️ Claude session timed out after {CLAUDE_TIMEOUT_SECONDS}s.")
-        return 1, (child.before if child else "") or ""
+        output = (e.stdout or "") + (e.stderr or "")
+        return 1, output
 
     except Exception as e:
-        log(f"❌ PTY failure: {e}")
-        return 1, ((child.before if child else "") or "") + f"\n{e}"
+        log(f"❌ Launch failure: {e}")
+        return 1, str(e)
 
 # =========================================================
 # MAIN LOOP
