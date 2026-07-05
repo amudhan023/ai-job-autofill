@@ -260,7 +260,9 @@ describe("Affirm live regression — react-select Yes/No questions", () => {
       expect(result.matches.find((m) => m.ruleId === rule)?.filled).toBe(true);
     }
     // No dangling open menus.
-    expect(document.querySelectorAll("[role='listbox']:not(#iti-1__country-listbox)").length).toBe(0);
+    expect(document.querySelectorAll("[role='listbox']:not(#iti-1__country-listbox)").length).toBe(
+      0,
+    );
   });
 
   it("write failures are reported honestly (no option matches the profile value)", async () => {

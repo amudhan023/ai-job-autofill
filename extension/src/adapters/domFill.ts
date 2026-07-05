@@ -260,10 +260,7 @@ export function setFileValue(input: HTMLInputElement, file: File): boolean {
   return true;
 }
 
-export function setRadioOrCheckbox(
-  group: HTMLInputElement[],
-  desiredLabel: string,
-): boolean {
+export function setRadioOrCheckbox(group: HTMLInputElement[], desiredLabel: string): boolean {
   // Standard path: find the option whose label text includes the desired value.
   const target = group.find((input) => {
     const label = labelForControl(input).toLowerCase();

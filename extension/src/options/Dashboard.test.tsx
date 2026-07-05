@@ -4,8 +4,26 @@ import { Dashboard } from "./Dashboard";
 import type { ApplicationRecord } from "@/shared/types";
 
 const records: ApplicationRecord[] = [
-  { id: "1", url: "u", company: "stripe", platform: "greenhouse", date: Date.now(), fieldsFilled: 8, fieldsTotal: 10, aiAssisted: 2 },
-  { id: "2", url: "u", company: "acme", platform: "lever", date: Date.now(), fieldsFilled: 5, fieldsTotal: 10, aiAssisted: 0 },
+  {
+    id: "1",
+    url: "u",
+    company: "stripe",
+    platform: "greenhouse",
+    date: Date.now(),
+    fieldsFilled: 8,
+    fieldsTotal: 10,
+    aiAssisted: 2,
+  },
+  {
+    id: "2",
+    url: "u",
+    company: "acme",
+    platform: "lever",
+    date: Date.now(),
+    fieldsFilled: 5,
+    fieldsTotal: 10,
+    aiAssisted: 0,
+  },
 ];
 
 describe("Dashboard", () => {

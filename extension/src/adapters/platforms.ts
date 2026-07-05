@@ -74,7 +74,11 @@ export const PLATFORM_HINTS: PlatformHint[] = [
   {
     platform: "smartrecruiters",
     url: /smartrecruiters/,
-    fingerprints: ["[data-test='application-form']", "[class*='smart-recruiters']", "[class*='sc-']"],
+    fingerprints: [
+      "[data-test='application-form']",
+      "[class*='smart-recruiters']",
+      "[class*='sc-']",
+    ],
     structure: ["[data-field]", "form[name='applicationForm']"],
     css: ["[class*='smartrecruiters']"],
     roots: ["[data-test='application-form']"],

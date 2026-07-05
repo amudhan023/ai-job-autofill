@@ -196,7 +196,9 @@ function reportPageStatus(): void {
 installNavigationWatcher();
 void resumeSessionOnLoad();
 // Extra detection fingerprints from remote config (hot-updatable, additive).
-void loadAdapterConfig().then(applyRemoteHints).catch(() => {});
+void loadAdapterConfig()
+  .then(applyRemoteHints)
+  .catch(() => {});
 
 // Announce presence on load (helps the popup know the content script is live).
 void chrome.runtime.sendMessage({ type: "CONTENT_READY", url: location.href }).catch(() => {});

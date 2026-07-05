@@ -6,7 +6,9 @@ import { useProfileStore } from "@/storage/store";
 import { emptyProfile } from "@/shared/profile";
 
 function storedProfile() {
-  const chrome = globalThis.chrome as unknown as { storage: { local: { get: (k: string) => Promise<Record<string, unknown>> } } };
+  const chrome = globalThis.chrome as unknown as {
+    storage: { local: { get: (k: string) => Promise<Record<string, unknown>> } };
+  };
   return chrome.storage.local.get("userProfile");
 }
 
@@ -67,7 +69,10 @@ describe("Options (profile editor)", () => {
       const stored = (await storedProfile()) as {
         userProfile?: { demographics: { raceEthnicity: string[]; gender: string } };
       };
-      expect(stored.userProfile?.demographics.raceEthnicity).toEqual(["Asian", "White / Caucasian"]);
+      expect(stored.userProfile?.demographics.raceEthnicity).toEqual([
+        "Asian",
+        "White / Caucasian",
+      ]);
       expect(stored.userProfile?.demographics.gender).toBe("Non-binary");
     });
   });
@@ -84,7 +89,9 @@ describe("Options (profile editor)", () => {
 
     expect(await screen.findByText(/saved/i)).toBeInTheDocument();
     await waitFor(async () => {
-      const stored = (await storedProfile()) as { userProfile?: { personal: { firstName: string } } };
+      const stored = (await storedProfile()) as {
+        userProfile?: { personal: { firstName: string } };
+      };
       expect(stored.userProfile?.personal.firstName).toBe("Amudhan");
     });
   });
@@ -113,7 +120,9 @@ describe("Options (profile editor)", () => {
     await userEvent.click(screen.getByRole("button", { name: /save profile/i }));
 
     await waitFor(async () => {
-      const stored = (await storedProfile()) as { userProfile?: { experience: Array<{ company: string }> } };
+      const stored = (await storedProfile()) as {
+        userProfile?: { experience: Array<{ company: string }> };
+      };
       expect(stored.userProfile?.experience[0]?.company).toBe("Confluent");
     });
   });

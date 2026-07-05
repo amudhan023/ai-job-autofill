@@ -34,7 +34,9 @@ describe("currentScope", () => {
     ).toBe("https://boards.greenhouse.io/acme");
     expect(
       currentScope({ origin: "https://boards.greenhouse.io", pathname: "/other/jobs/9" }),
-    ).not.toBe(currentScope({ origin: "https://boards.greenhouse.io", pathname: "/acme/jobs/123" }));
+    ).not.toBe(
+      currentScope({ origin: "https://boards.greenhouse.io", pathname: "/acme/jobs/123" }),
+    );
   });
 });
 

@@ -86,7 +86,14 @@ export async function detectAndFill(
   // something (conditional fields appear in reaction to our writes).
   const settleMs = opts.settleMs ?? DEFAULT_SETTLE_MS;
   if (adapter && filled > 0 && settleMs > 0) {
-    filled += await fillLateFields(adapter, profile, seen, matches, settleMs, opts.debounceMs ?? 150);
+    filled += await fillLateFields(
+      adapter,
+      profile,
+      seen,
+      matches,
+      settleMs,
+      opts.debounceMs ?? 150,
+    );
   }
 
   return {
@@ -101,9 +108,7 @@ export async function detectAndFill(
 
 function shouldWrite(match: FieldMatch): boolean {
   return (
-    match.value !== null &&
-    match.confidence >= AUTOFILL_FLOOR &&
-    !match.flags.includes("confirm")
+    match.value !== null && match.confidence >= AUTOFILL_FLOOR && !match.flags.includes("confirm")
   );
 }
 

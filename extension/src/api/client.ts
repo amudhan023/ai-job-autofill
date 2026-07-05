@@ -134,16 +134,17 @@ export interface CoverLetterResponse {
   stubbed: boolean;
 }
 
-export type HealthCheckResult =
-  | { ok: true; aiEnabled: boolean }
-  | { ok: false; error: string };
+export type HealthCheckResult = { ok: true; aiEnabled: boolean } | { ok: false; error: string };
 
 /**
  * One-shot reachability check against the backend's /health endpoint, for a
  * "Test connection" affordance in Settings — deliberately no retry (the user
  * wants an immediate answer, not resilience) and a short timeout.
  */
-export async function checkBackendHealth(baseUrl: string, timeoutMs = 5000): Promise<HealthCheckResult> {
+export async function checkBackendHealth(
+  baseUrl: string,
+  timeoutMs = 5000,
+): Promise<HealthCheckResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {

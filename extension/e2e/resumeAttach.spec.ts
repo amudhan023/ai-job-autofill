@@ -25,7 +25,16 @@ test.afterAll(async () => {
 
 test.beforeEach(async () => {
   await seedLocalStorage(worker, {
-    userProfile: { personal: {}, links: {}, workAuth: {}, experience: [], education: [], skills: {}, preferences: {}, meta: {} },
+    userProfile: {
+      personal: {},
+      links: {},
+      workAuth: {},
+      experience: [],
+      education: [],
+      skills: {},
+      preferences: {},
+      meta: {},
+    },
     resumeFile: {
       name: "resume.pdf",
       mimeType: "application/pdf",

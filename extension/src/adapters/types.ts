@@ -45,7 +45,10 @@ export function inferType(el: HTMLElement): FieldType {
   if (el.tagName === "SELECT") return "select";
   // Popup-listbox triggers (button/div + aria-controls options panel) behave
   // like selects; only validated composites reach here (see discoverWithin).
-  if (el.tagName === "BUTTON" || (el.getAttribute("role") === "combobox" && el.tagName !== "INPUT")) {
+  if (
+    el.tagName === "BUTTON" ||
+    (el.getAttribute("role") === "combobox" && el.tagName !== "INPUT")
+  ) {
     return "select";
   }
   // Custom text widgets (contenteditable rich text, ARIA textbox): treat

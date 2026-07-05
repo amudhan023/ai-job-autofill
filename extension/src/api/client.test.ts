@@ -2,11 +2,14 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { BackendClient, checkBackendHealth, getBackendClient } from "./client";
 
 function mockFetch(payload: unknown, ok = true, status = 200) {
-  return vi.fn(async () => ({
-    ok,
-    status,
-    json: async () => payload,
-  }) as unknown as Response);
+  return vi.fn(
+    async () =>
+      ({
+        ok,
+        status,
+        json: async () => payload,
+      }) as unknown as Response,
+  );
 }
 
 describe("BackendClient", () => {
@@ -25,7 +28,14 @@ describe("BackendClient", () => {
   });
 
   it("posts an answer request with experience context", async () => {
-    const fetchMock = mockFetch({ answer: "STAR", confidence: 0.85, model: "m", category: "BEHAVIORAL", retrieved: ["x"], stubbed: false });
+    const fetchMock = mockFetch({
+      answer: "STAR",
+      confidence: 0.85,
+      model: "m",
+      category: "BEHAVIORAL",
+      retrieved: ["x"],
+      stubbed: false,
+    });
     vi.stubGlobal("fetch", fetchMock);
     const client = new BackendClient("https://api.example");
     const res = await client.answer({ question: "q", jd_summary: "jd", experience: [] });
@@ -64,7 +74,11 @@ describe("BackendClient", () => {
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ category: "EDUCATION" }) } as Response);
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ category: "EDUCATION" }),
+      } as Response);
     vi.stubGlobal("fetch", fetchMock);
     const client = new BackendClient("https://api.example", 20_000, 1, 1);
     const res = await client.classify("q");
@@ -76,7 +90,11 @@ describe("BackendClient", () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({}) } as Response)
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ category: "SALARY" }) } as Response);
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ category: "SALARY" }),
+      } as Response);
     vi.stubGlobal("fetch", fetchMock);
     const client = new BackendClient("https://api.example", 20_000, 1, 1);
     const res = await client.classify("q");
@@ -85,7 +103,9 @@ describe("BackendClient", () => {
   });
 
   it("does not retry a 4xx response — retrying a client error can't help", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 422, json: async () => ({}) } as Response);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 422, json: async () => ({}) } as Response);
     vi.stubGlobal("fetch", fetchMock);
     const client = new BackendClient("https://api.example", 20_000, 1, 1);
     await expect(client.classify("q")).rejects.toThrow(/422/);

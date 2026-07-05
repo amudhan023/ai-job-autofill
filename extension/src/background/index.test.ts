@@ -153,7 +153,11 @@ describe("background service worker — cover letter generation (T7)", () => {
     );
     const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     const body = JSON.parse(init.body as string);
-    expect(body).toMatchObject({ jdSummary: "Backend engineer role.", company: "Acme", style: "startup" });
+    expect(body).toMatchObject({
+      jdSummary: "Backend engineer role.",
+      company: "Acme",
+      style: "startup",
+    });
   });
 
   it("REQUEST_COVER_LETTER surfaces a clear error when the backend is unreachable", async () => {

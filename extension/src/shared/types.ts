@@ -129,7 +129,12 @@ export type ExtensionMessage =
    * generic Q&A draft above because it needs company/style inputs and uses
    * the cover-letter-specific prompt, not a one-line free-text answer.
    */
-  | { type: "AI_DRAFT_COVER_LETTER"; fieldId: string; company: string; style: "formal" | "startup" | "creative" };
+  | {
+      type: "AI_DRAFT_COVER_LETTER";
+      fieldId: string;
+      company: string;
+      style: "formal" | "startup" | "creative";
+    };
 
 /** Multi-page fill-session progress shown in the popup (M4). */
 export interface SessionSummary {

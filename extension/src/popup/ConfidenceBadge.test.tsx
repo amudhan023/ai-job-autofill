@@ -43,14 +43,21 @@ describe("ConfidenceBadge (write-status driven)", () => {
   });
 
   it("unmatched / no-value fields show a question marker", () => {
-    render(<ConfidenceBadge match={match({ value: null, ruleId: null, tier: "low", confidence: 0 })} />);
+    render(
+      <ConfidenceBadge match={match({ value: null, ruleId: null, tier: "low", confidence: 0 })} />,
+    );
     expect(screen.getByText("?")).toBeInTheDocument();
   });
 
   it("blocklisted fields show a never-fill cross regardless of tier", () => {
     render(
       <ConfidenceBadge
-        match={match({ tier: "high", value: null, flags: ["blocklist"], reason: "Sensitive field — never auto-filled." })}
+        match={match({
+          tier: "high",
+          value: null,
+          flags: ["blocklist"],
+          reason: "Sensitive field — never auto-filled.",
+        })}
       />,
     );
     expect(screen.getByText("✕")).toBeInTheDocument();

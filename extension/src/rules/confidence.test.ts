@@ -4,23 +4,43 @@ import { computeConfidence, toTier, labelMatchScore } from "./confidence";
 describe("computeConfidence", () => {
   it("is 0 when the profile has no value (never fill blanks)", () => {
     expect(
-      computeConfidence({ labelMatchScore: 0.97, atsKnownField: true, typeMatch: true, profileValueExists: false }),
+      computeConfidence({
+        labelMatchScore: 0.97,
+        atsKnownField: true,
+        typeMatch: true,
+        profileValueExists: false,
+      }),
     ).toBe(0);
   });
 
   it("floors ATS-known fields at 0.97", () => {
     expect(
-      computeConfidence({ labelMatchScore: 0.4, atsKnownField: true, typeMatch: true, profileValueExists: true }),
+      computeConfidence({
+        labelMatchScore: 0.4,
+        atsKnownField: true,
+        typeMatch: true,
+        profileValueExists: true,
+      }),
     ).toBeCloseTo(0.97, 5);
   });
 
   it("penalizes type mismatch by 0.7", () => {
-    const c = computeConfidence({ labelMatchScore: 0.85, atsKnownField: false, typeMatch: false, profileValueExists: true });
+    const c = computeConfidence({
+      labelMatchScore: 0.85,
+      atsKnownField: false,
+      typeMatch: false,
+      profileValueExists: true,
+    });
     expect(c).toBeCloseTo(0.595, 5);
   });
 
   it("caps at 1.0", () => {
-    const c = computeConfidence({ labelMatchScore: 1.5, atsKnownField: false, typeMatch: true, profileValueExists: true });
+    const c = computeConfidence({
+      labelMatchScore: 1.5,
+      atsKnownField: false,
+      typeMatch: true,
+      profileValueExists: true,
+    });
     expect(c).toBe(1.0);
   });
 });

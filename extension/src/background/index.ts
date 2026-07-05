@@ -7,11 +7,7 @@ import type { FillResult } from "@/shared/types";
 import { recordApplication } from "@/storage/history";
 import { loadProfile } from "@/storage/profile";
 import { getCachedAnswer, putCachedAnswer } from "@/storage/answerCache";
-import {
-  getBackendClient,
-  type AnswerResponse,
-  type CoverLetterResponse,
-} from "@/api/client";
+import { getBackendClient, type AnswerResponse, type CoverLetterResponse } from "@/api/client";
 
 interface InternalMessage {
   type:
@@ -123,7 +119,11 @@ async function handle(
       // Cache first (M5): repeat questions across applications are free.
       const cached = await getCachedAnswer(question);
       if (cached) {
-        return { ok: true, answer: { answer: cached.answer, category: cached.category, model: cached.model }, cached: true };
+        return {
+          ok: true,
+          answer: { answer: cached.answer, category: cached.category, model: cached.model },
+          cached: true,
+        };
       }
       const client = await getBackendClient();
       if (!client) return { ok: false, error: "Could not read backend settings" };

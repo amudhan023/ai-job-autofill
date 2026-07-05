@@ -28,7 +28,10 @@ test("health reports AI enabled in fake-AI mode", async () => {
 });
 
 test("profile PUT/GET round-trips over HTTP", async () => {
-  const profile = { personal: { firstName: "Integration", lastName: "Test" }, meta: { totalYearsExp: 7 } };
+  const profile = {
+    personal: { firstName: "Integration", lastName: "Test" },
+    meta: { totalYearsExp: 7 },
+  };
   const put = await api.put("/profile/itest", { data: profile });
   expect(put.ok()).toBeTruthy();
   const got = await api.get("/profile/itest");
@@ -36,7 +39,9 @@ test("profile PUT/GET round-trips over HTTP", async () => {
 });
 
 test("classify returns a category", async () => {
-  const res = await api.post("/ai/classify", { data: { question: "Are you authorized to work in the US?" } });
+  const res = await api.post("/ai/classify", {
+    data: { question: "Are you authorized to work in the US?" },
+  });
   expect(res.ok()).toBeTruthy();
   expect((await res.json()).category).toBe("VISA_WORK_AUTH");
 });
@@ -46,7 +51,9 @@ test("answer returns a non-stub STAR response with RAG context", async () => {
     data: {
       question: "Describe a time you led a team through change",
       jd_summary: "Staff Engineer",
-      experience: [{ company: "Acme", title: "Staff Engineer", bullets: ["Led a migration across teams"] }],
+      experience: [
+        { company: "Acme", title: "Staff Engineer", bullets: ["Led a migration across teams"] },
+      ],
     },
   });
   expect(res.ok()).toBeTruthy();
@@ -69,7 +76,9 @@ test("cover letter returns non-stub content in the requested style", async () =>
 });
 
 test("jd extraction returns structured JSON", async () => {
-  const res = await api.post("/ai/jd", { data: { jd_text: "We need a Staff Engineer with Python and FastAPI." } });
+  const res = await api.post("/ai/jd", {
+    data: { jd_text: "We need a Staff Engineer with Python and FastAPI." },
+  });
   expect(res.ok()).toBeTruthy();
   const body = await res.json();
   expect(Array.isArray(body.requiredSkills)).toBe(true);
@@ -81,8 +90,22 @@ test("jobs/rank orders by match score", async () => {
     data: {
       candidate: { skills: ["Kafka", "Go"], years_experience: 18 },
       postings: [
-        { id: "a", title: "Staff", company: "A", url: "u", required_skills: ["Kafka", "Go"], years_required: 8 },
-        { id: "b", title: "Staff", company: "B", url: "u", required_skills: ["COBOL"], years_required: 8 },
+        {
+          id: "a",
+          title: "Staff",
+          company: "A",
+          url: "u",
+          required_skills: ["Kafka", "Go"],
+          years_required: 8,
+        },
+        {
+          id: "b",
+          title: "Staff",
+          company: "B",
+          url: "u",
+          required_skills: ["COBOL"],
+          years_required: 8,
+        },
       ],
     },
   });
@@ -93,7 +116,13 @@ test("jobs/rank orders by match score", async () => {
 
 test("resume parse returns 422 (not 500) for a malformed PDF", async () => {
   const res = await api.post("/resume/parse", {
-    multipart: { file: { name: "broken.pdf", mimeType: "application/pdf", buffer: Buffer.from("not a real pdf") } },
+    multipart: {
+      file: {
+        name: "broken.pdf",
+        mimeType: "application/pdf",
+        buffer: Buffer.from("not a real pdf"),
+      },
+    },
   });
   expect(res.status()).toBe(422);
 });

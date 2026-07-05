@@ -122,10 +122,7 @@ function isExactKeyword(text: string, pattern: RegExp): boolean {
  * Evaluate a single discovered field against the rules + profile.
  * Returns a FieldMatch describing what (if anything) we'd fill and how sure.
  */
-export function evaluateField(
-  field: DiscoveredField,
-  profile: UserProfile,
-): FieldMatch {
+export function evaluateField(field: DiscoveredField, profile: UserProfile): FieldMatch {
   // Hard safety gate first — checked on every direct signal (not nearby text,
   // which can legitimately mention e.g. an EEO notice near unrelated fields).
   if (
@@ -213,7 +210,11 @@ export function evaluateField(
 }
 
 function formatValue(raw: unknown, rule: FieldRule): string | null {
-  const result = rule.transform ? rule.transform(raw) : raw === null || raw === undefined ? "" : String(raw);
+  const result = rule.transform
+    ? rule.transform(raw)
+    : raw === null || raw === undefined
+      ? ""
+      : String(raw);
   return result.length > 0 ? result : null;
 }
 
@@ -244,9 +245,6 @@ function buildReason(
 }
 
 /** Evaluate all discovered fields. */
-export function evaluateFields(
-  fields: DiscoveredField[],
-  profile: UserProfile,
-): FieldMatch[] {
+export function evaluateFields(fields: DiscoveredField[], profile: UserProfile): FieldMatch[] {
   return fields.map((f) => evaluateField(f, profile));
 }

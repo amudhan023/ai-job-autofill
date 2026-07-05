@@ -18,10 +18,7 @@ const ENRICH_TIMEOUT_MS = 2500;
 export function selectUnmatched(matches: FieldMatch[]): FieldMatch[] {
   return matches
     .filter(
-      (m) =>
-        m.ruleId === null &&
-        !m.flags.includes("blocklist") &&
-        m.label.trim().length >= 5,
+      (m) => m.ruleId === null && !m.flags.includes("blocklist") && m.label.trim().length >= 5,
     )
     .slice(0, MAX_QUESTIONS);
 }

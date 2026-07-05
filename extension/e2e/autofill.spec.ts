@@ -26,12 +26,31 @@ const SEED_PROFILE = {
     phone: "+1-555-0100",
     location: { city: "Austin", state: "TX", country: "USA", postalCode: "78701" },
   },
-  links: { linkedin: "https://linkedin.com/in/amudhan", github: "https://github.com/amudhan023", portfolio: "", website: "" },
+  links: {
+    linkedin: "https://linkedin.com/in/amudhan",
+    github: "https://github.com/amudhan023",
+    portfolio: "",
+    website: "",
+  },
   workAuth: { usAuthorized: true, sponsorshipNeeded: false, visaType: "USC" },
-  experience: [{ company: "Confluent", title: "Staff Engineer", startDate: "2021-01", endDate: "", current: true, bullets: [] }],
+  experience: [
+    {
+      company: "Confluent",
+      title: "Staff Engineer",
+      startDate: "2021-01",
+      endDate: "",
+      current: true,
+      bullets: [],
+    },
+  ],
   education: [],
   skills: { technical: [], languages: [], certifications: [] },
-  preferences: { salaryExpected: "250000", noticePeriod: "", remotePreference: "", willingToRelocate: false },
+  preferences: {
+    salaryExpected: "250000",
+    noticePeriod: "",
+    remotePreference: "",
+    willingToRelocate: false,
+  },
   meta: { totalYearsExp: 18 },
 };
 
@@ -44,8 +63,7 @@ test.beforeAll(async () => {
     channel: "chromium", // new headless supports MV3 extensions
     args: [`--disable-extensions-except=${EXT_PATH}`, `--load-extension=${EXT_PATH}`],
   });
-  worker =
-    context.serviceWorkers()[0] ?? (await context.waitForEvent("serviceworker"));
+  worker = context.serviceWorkers()[0] ?? (await context.waitForEvent("serviceworker"));
 });
 
 test.afterAll(async () => {

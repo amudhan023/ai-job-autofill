@@ -41,13 +41,7 @@ export function toTier(confidence: number): ConfidenceTier {
  *  - nearby:       surrounding text/heading — context only, below the
  *                  auto-fill floor (0.7) so it badges but never writes
  */
-export type MatchSource =
-  | "autocomplete"
-  | "label"
-  | "aria"
-  | "placeholder"
-  | "attr"
-  | "nearby";
+export type MatchSource = "autocomplete" | "label" | "aria" | "placeholder" | "attr" | "nearby";
 
 const SOURCE_SCORES: Record<MatchSource, number> = {
   autocomplete: 0.98,
