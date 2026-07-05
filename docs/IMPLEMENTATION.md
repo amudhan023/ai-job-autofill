@@ -118,6 +118,16 @@ and a missing/unreachable backend degrades to the deterministic result.
 Adding a new ATS platform is now a `PLATFORM_HINTS` data entry (or a remote
 config push for detection tweaks) — no new code. This completes M1–M6.
 
+### Perf regression guard (T8, 2026-07-05)
+
+`extension/src/content/corpus.perf.test.ts` runs the full detect → evaluate
+→ write pipeline (`detectAndFill`) 25x over the six synthetic corpus fixtures
+(150 passes) and asserts total wall time stays under a generous 100ms/pass
+budget (~75x local headroom — observed runs land under 5ms/pass). Purely a
+regression guard for an accidental algorithmic blowup (e.g. O(n²) DOM walk),
+not a tight perf target; runs in CI as part of the normal `npm run test`
+suite, no separate bench command needed.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |
