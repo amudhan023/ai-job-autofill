@@ -11,6 +11,7 @@ import {
 } from "@/storage/settings";
 import { BackendClient, checkBackendHealth } from "@/api/client";
 import { saveResumeFile } from "@/storage/resumeFile";
+import { exportProfileJson, importProfileJson } from "@/storage/profile";
 import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
 
 type Tab = "profile" | "applications" | "settings";
@@ -647,6 +648,11 @@ function SettingsPanel() {
   const [autofillOnNav, setAutofillOnNav] = useState(true);
   const [saved, setSaved] = useState(false);
   const [test, setTest] = useState<ConnectionTestState>({ status: "idle" });
+  const { profile, setProfile, persist: persistProfile } = useProfileStore();
+  const [importStatus, setImportStatus] = useState<
+    { status: "idle" } | { status: "done" } | { status: "error"; message: string }
+  >({ status: "idle" });
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     void loadBackendUrl().then(setUrl);
@@ -667,6 +673,42 @@ function SettingsPanel() {
         ? { status: "ok", aiEnabled: result.aiEnabled }
         : { status: "error", error: result.error },
     );
+  };
+
+  const onExport = () => {
+    const json = exportProfileJson(profile);
+    const blob = new Blob([json], { type: "application/json" });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = `job-autofill-profile-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(href);
+  };
+
+  const onImportFile = async (file: File | undefined) => {
+    if (!file) return;
+    const confirmed = window.confirm(
+      "Importing will replace your entire saved profile with the contents of this file. Continue?",
+    );
+    if (!confirmed) {
+      if (importInputRef.current) importInputRef.current.value = "";
+      return;
+    }
+    try {
+      const text = await readAsText(file);
+      const imported = importProfileJson(text);
+      setProfile(imported);
+      await persistProfile();
+      setImportStatus({ status: "done" });
+    } catch (e) {
+      setImportStatus({
+        status: "error",
+        message: e instanceof Error ? e.message : "Import failed",
+      });
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = "";
+    }
   };
 
   return (
@@ -721,6 +763,38 @@ function SettingsPanel() {
         </button>
         {saved && <span className="text-sm text-green-600">Saved ✓</span>}
       </div>
+
+      <h2 className="mt-8 mb-1 text-lg font-semibold">Profile data</h2>
+      <p className="mb-4 text-sm text-gray-500">
+        Your profile lives only in this browser's local storage. Export it to back it up or move it
+        to another device; import a previously exported file to restore it. Nothing is uploaded.
+      </p>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onExport}
+          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          Export profile (JSON)
+        </button>
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="application/json,.json"
+            aria-label="Import profile file"
+            className="hidden"
+            onChange={(e) => void onImportFile(e.target.files?.[0])}
+          />
+          Import profile…
+        </label>
+      </div>
+      {importStatus.status === "done" && (
+        <p className="mt-2 text-sm text-green-600">Profile imported ✓</p>
+      )}
+      {importStatus.status === "error" && (
+        <p className="mt-2 text-sm text-red-600">Import failed: {importStatus.message}</p>
+      )}
     </div>
   );
 }
@@ -728,6 +802,17 @@ function SettingsPanel() {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/** Blob.text with a FileReader fallback (jsdom, older engines). */
+function readAsText(file: File): Promise<string> {
+  if (typeof file.text === "function") return file.text();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}
 
 function blankExperience(): Experience {
   return { company: "", title: "", startDate: "", endDate: "", current: true, bullets: [] };

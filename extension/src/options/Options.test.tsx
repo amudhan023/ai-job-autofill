@@ -206,3 +206,88 @@ describe("Options — Settings panel backend connection test (T6)", () => {
     expect(screen.getByRole("button", { name: /save settings/i })).toBeEnabled();
   });
 });
+
+describe("Options — Settings panel profile import/export (T11)", () => {
+  beforeEach(() => {
+    useProfileStore.setState({ profile: emptyProfile(), loaded: false });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("exports the current profile as a downloaded JSON file", async () => {
+    useProfileStore.setState({
+      profile: { ...emptyProfile(), personal: { ...emptyProfile().personal, firstName: "Ada" } },
+      loaded: true,
+    });
+
+    const createObjectURL = vi.fn((_obj: Blob | MediaSource) => "blob:mock-url");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: /export profile/i }));
+
+    expect(createObjectURL).toHaveBeenCalledTimes(1);
+    const blobArg = createObjectURL.mock.calls[0][0] as Blob;
+    expect(blobArg.type).toBe("application/json");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+
+    clickSpy.mockRestore();
+  });
+
+  it("imports a valid profile JSON file after confirmation and persists it", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    const imported = {
+      ...emptyProfile(),
+      personal: { ...emptyProfile().personal, firstName: "Grace" },
+    };
+    const file = new File([JSON.stringify(imported)], "profile.json", {
+      type: "application/json",
+    });
+
+    await userEvent.upload(await screen.findByLabelText("Import profile file"), file);
+
+    expect(await screen.findByText(/imported/i)).toBeInTheDocument();
+    await waitFor(async () => {
+      const stored = (await storedProfile()) as {
+        userProfile?: { personal: { firstName: string } };
+      };
+      expect(stored.userProfile?.personal.firstName).toBe("Grace");
+    });
+  });
+
+  it("does not import when the user cancels the overwrite confirmation", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(false);
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    const file = new File([JSON.stringify(emptyProfile())], "profile.json", {
+      type: "application/json",
+    });
+    await userEvent.upload(await screen.findByLabelText("Import profile file"), file);
+
+    expect(screen.queryByText(/imported/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a descriptive error for an invalid import file", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    const file = new File(["not json"], "profile.json", { type: "application/json" });
+    await userEvent.upload(await screen.findByLabelText("Import profile file"), file);
+
+    expect(await screen.findByText(/import failed/i)).toBeInTheDocument();
+  });
+});
