@@ -138,6 +138,18 @@ reformat landed as dedicated commits; those SHAs are listed in
 `git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone to
 have `git blame` skip them.
 
+### i18n field taxonomy (T10, 2026-07-05)
+
+`extension/src/rules/fieldRules.ts` gained Spanish/German/French label alias
+patterns for most rules (name/contact/location/experience/skills/preferences/
+work-auth/education/resume/cover-letter) — additive regex entries on the
+existing `patterns` arrays, no new rule ids or matching logic. Still fully
+rule-engine-only (no LLM on structured fields). US-specific concepts
+(`usAuthorized`, `clearance`) are left English-only since they don't
+localize. Covered by `extension/src/rules/i18n.test.ts` (rule-matching per
+language) and `extension/src/content/corpus.i18n.test.ts` (full
+detect-and-fill corpus fixtures per language, mirroring `corpus.test.ts`).
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

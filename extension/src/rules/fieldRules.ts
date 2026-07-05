@@ -29,6 +29,14 @@ import {
  * "confirm" flag — see shouldWrite() in content/fillExecutor.ts — so it is
  * only ever detected and surfaced for the user's own review, never written to
  * the page automatically.
+ *
+ * i18n (T10): most rules also carry Spanish/German/French label aliases
+ * (marked "ES/DE/FR aliases (T10)" inline) so the same deterministic,
+ * no-LLM matching works on non-English forms. These are additive pattern
+ * entries only — no new rule ids, structures, or matching logic. Coverage
+ * starts with the highest-reach fields (name/contact/location/experience/
+ * work-auth/education); US-specific rules (usAuthorized, clearance) are left
+ * English-only since the underlying concept doesn't localize.
  */
 export const FIELD_RULES: FieldRule[] = [
   // --- Name fields ---
@@ -36,7 +44,16 @@ export const FIELD_RULES: FieldRule[] = [
   // "Preferred Name" / "Full Name" / "Legal Full Name" resolve correctly.
   {
     id: "preferredName",
-    patterns: [/preferred.?name/i, /\bnickname\b/i, /known.?as/i, /display.?name/i],
+    patterns: [
+      /preferred.?name/i,
+      /\bnickname\b/i,
+      /known.?as/i,
+      /display.?name/i,
+      // ES/DE/FR aliases (T10)
+      /apodo|nombre.?preferido/i,
+      /spitzname|bevorzugter.?name/i,
+      /surnom|nom.?pr[eé]f[eé]r[eé]/i,
+    ],
     profile: "personal",
     type: "text",
     transform: toPreferredName,
@@ -50,6 +67,10 @@ export const FIELD_RULES: FieldRule[] = [
       /candidate.?name/i,
       /applicant.?name/i,
       /^(your\s+)?name$/i,
+      // ES/DE/FR aliases (T10)
+      /nombre.?completo/i,
+      /vollst[aä]ndiger.?name/i,
+      /nom.?complet/i,
     ],
     profile: "personal",
     type: "text",
@@ -58,7 +79,17 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "firstName",
-    patterns: [/first.?name/i, /given.?name/i, /\bforename\b/i],
+    patterns: [
+      /first.?name/i,
+      /given.?name/i,
+      /\bforename\b/i,
+      // ES/DE/FR aliases (T10) — Spanish "Nombre" and French "Prénom" are the
+      // conventional first-name label on ES/FR forms (paired with Apellido/Nom
+      // for last name below).
+      /\bnombre\b/i,
+      /\bvorname\b/i,
+      /pr[eé]nom/i,
+    ],
     profile: "personal.firstName",
     type: "text",
     autocomplete: ["given-name"],
@@ -72,7 +103,18 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "lastName",
-    patterns: [/last.?name/i, /family.?name/i, /surname/i],
+    patterns: [
+      /last.?name/i,
+      /family.?name/i,
+      /surname/i,
+      // ES/DE/FR aliases (T10) — bare "Nom" is anchored (French forms use it
+      // standalone for surname, paired with "Prénom"); unanchored would also
+      // match inside "Prénom" itself since accented chars count as boundaries.
+      /\bapellidos?\b/i,
+      /nachname|familienname/i,
+      /^nom\s*:?\*?$/i,
+      /nom.?de.?famille/i,
+    ],
     profile: "personal.lastName",
     type: "text",
     autocomplete: ["family-name"],
@@ -81,7 +123,12 @@ export const FIELD_RULES: FieldRule[] = [
   // --- Contact ---
   {
     id: "email",
-    patterns: [/e-?mail/i],
+    patterns: [
+      /e-?mail/i,
+      // ES/FR aliases (T10) — German "E-Mail" already matches /e-?mail/i.
+      /correo(.?electr[oó]nico)?/i,
+      /courriel/i,
+    ],
     profile: "personal.email",
     type: "email",
     autocomplete: ["email"],
@@ -107,7 +154,14 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "phone",
-    patterns: [/phone|mobile|cell|telephone/i, /contact.?number/i],
+    patterns: [
+      /phone|mobile|cell|telephone/i,
+      /contact.?number/i,
+      // ES/DE/FR aliases (T10)
+      /tel[eé]fono|m[oó]vil/i,
+      /telefon|handynummer/i,
+      /t[eé]l[eé]phone|portable/i,
+    ],
     profile: "personal.phone",
     type: "tel",
     autocomplete: ["tel", "tel-national", "tel-local"],
@@ -118,7 +172,13 @@ export const FIELD_RULES: FieldRule[] = [
   { id: "github", patterns: [/git.?hub/i], profile: "links.github", type: "url" },
   {
     id: "portfolio",
-    patterns: [/portfolio|personal.?(site|website|url)|\bwebsite\b/i],
+    patterns: [
+      /portfolio|personal.?(site|website|url)|\bwebsite\b/i,
+      // ES/DE/FR aliases (T10)
+      /sitio.?web/i,
+      /webseite|webauftritt/i,
+      /site.?web/i,
+    ],
     profile: "links.portfolio",
     type: "url",
   },
@@ -139,6 +199,11 @@ export const FIELD_RULES: FieldRule[] = [
       /address.?line.?1/i,
       /^(home\s|mailing\s|current\s|present\s|street\s)?address\s*:?\*?$/i,
       /\bstreet\b/i,
+      // ES/DE/FR aliases (T10) — "Adresse" is shared by German and French.
+      /direcci[oó]n/i,
+      /stra[sß]e/i,
+      /\badresse\b/i,
+      /\brue\b/i,
     ],
     profile: "personal.location.street",
     type: "text",
@@ -153,28 +218,53 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "city",
-    patterns: [/\bcity\b|\btown\b|municipality/i],
+    patterns: [
+      /\bcity\b|\btown\b|municipality/i,
+      // ES/DE/FR aliases (T10)
+      /\bciudad\b/i,
+      /\bstadt\b/i,
+      /\bville\b/i,
+    ],
     profile: "personal.location.city",
     type: "text",
     autocomplete: ["address-level2"],
   },
   {
     id: "state",
-    patterns: [/\bstate\b|\bprovince\b|\bregion\b/i],
+    patterns: [
+      /\bstate\b|\bprovince\b|\bregion\b/i,
+      // ES/DE/FR aliases (T10) — Spanish "estado" is skipped: it overlaps
+      // with visa/work-status wording, so only the unambiguous "provincia"
+      // is added here.
+      /\bprovincia\b/i,
+      /\bbundesland\b/i,
+    ],
     profile: "personal.location.state",
     type: "text",
     autocomplete: ["address-level1"],
   },
   {
     id: "country",
-    patterns: [/country/i],
+    patterns: [
+      /country/i,
+      // ES/DE/FR aliases (T10)
+      /\bpa[ií]s\b/i,
+      /\bland\b/i,
+      /\bpays\b/i,
+    ],
     profile: "personal.location.country",
     type: "text",
     autocomplete: ["country", "country-name"],
   },
   {
     id: "postalCode",
-    patterns: [/zip|postal|post.?code/i],
+    patterns: [
+      /zip|postal|post.?code/i,
+      // ES/DE/FR aliases (T10)
+      /c[oó]digo.?postal/i,
+      /postleitzahl/i,
+      /code.?postal/i,
+    ],
     profile: "personal.location.postalCode",
     type: "text",
     autocomplete: ["postal-code"],
@@ -189,6 +279,10 @@ export const FIELD_RULES: FieldRule[] = [
       /current.?(company|employer)|present.?company/i,
       /^employer\s*:?\*?$/i,
       /most.?recent.?(company|employer)/i,
+      // ES/DE/FR aliases (T10)
+      /empresa.?actual/i,
+      /aktuelles.?unternehmen|derzeitiger.?arbeitgeber/i,
+      /entreprise.?actuelle|employeur.?actuel/i,
     ],
     profile: "experience[0].company",
     type: "text",
@@ -200,6 +294,10 @@ export const FIELD_RULES: FieldRule[] = [
       /current.?(title|position|role)/i,
       /job.?title/i,
       /most.?recent.?(title|position|role)/i,
+      // ES/DE/FR aliases (T10)
+      /puesto.?actual|cargo.?actual/i,
+      /aktuelle.?position|aktueller.?titel/i,
+      /poste.?actuel|titre.?actuel/i,
     ],
     profile: "experience[0].title",
     type: "text",
@@ -207,7 +305,15 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "yearsExp",
-    patterns: [/years.?(of.)?exp/i, /experience.*years/i, /how.?many.?years/i],
+    patterns: [
+      /years.?(of.)?exp/i,
+      /experience.*years/i,
+      /how.?many.?years/i,
+      // ES/DE/FR aliases (T10)
+      /a[nñ]os.?de.?experiencia/i,
+      /jahre.?erfahrung|berufserfahrung/i,
+      /ann[eé]es.?d.?exp[eé]rience/i,
+    ],
     profile: "meta.totalYearsExp",
     type: "number",
   },
@@ -215,21 +321,35 @@ export const FIELD_RULES: FieldRule[] = [
   // --- Skills ---
   {
     id: "skillsList",
-    patterns: [/\b(technical\s+|key\s+|top\s+)?skills\b/i],
+    patterns: [
+      /\b(technical\s+|key\s+|top\s+)?skills\b/i,
+      // ES/DE/FR aliases (T10)
+      /habilidades|competencias/i,
+      /f[aä]higkeiten|kenntnisse/i,
+      /comp[eé]tences/i,
+    ],
     profile: "skills.technical",
     type: "textarea",
     transform: joinList,
   },
   {
     id: "languagesSpoken",
-    patterns: [/languages?.?(you\s+)?(speak|spoken|known|fluen)/i, /spoken.?languages?/i],
+    patterns: [
+      /languages?.?(you\s+)?(speak|spoken|known|fluen)/i,
+      /spoken.?languages?/i,
+      // ES/DE/FR aliases (T10)
+      /\bidiomas\b/i,
+      /\bsprachen\b/i,
+      /\blangues\b/i,
+    ],
     profile: "skills.languages",
     type: "text",
     transform: joinList,
   },
   {
     id: "certifications",
-    patterns: [/certificat/i],
+    // "certificat" already matches French "certificat(s)"/"certification(s)".
+    patterns: [/certificat/i, /certificaciones/i, /zertifizierung/i],
     profile: "skills.certifications",
     type: "text",
     transform: joinList,
@@ -238,21 +358,41 @@ export const FIELD_RULES: FieldRule[] = [
   // --- Preferences ---
   {
     id: "salary",
-    patterns: [/salary|compensation|expected.?pay|ctc/i, /desired.?(pay|salary)|pay.?expectation/i],
+    patterns: [
+      /salary|compensation|expected.?pay|ctc/i,
+      /desired.?(pay|salary)|pay.?expectation/i,
+      // ES/DE/FR aliases (T10)
+      /\bsalario\b/i,
+      /\bgehalt\b/i,
+      /\bsalaire\b/i,
+    ],
     profile: "preferences.salaryExpected",
     type: "text",
     flags: ["confirm"],
   },
   {
     id: "noticePeriod",
-    patterns: [/notice.?period|availab|start.?date|when.?can.?you.?start/i],
+    patterns: [
+      /notice.?period|availab|start.?date|when.?can.?you.?start/i,
+      // ES/DE/FR aliases (T10)
+      /periodo.?de.?preaviso|disponibilidad/i,
+      /k[uü]ndigungsfrist/i,
+      /pr[eé]avis/i,
+    ],
     profile: "preferences.noticePeriod",
     type: "text",
     flags: ["confirm"],
   },
   {
     id: "relocate",
-    patterns: [/reloca/i, /willing.?to.?move/i],
+    patterns: [
+      /reloca/i,
+      /willing.?to.?move/i,
+      // ES/DE/FR aliases (T10)
+      /reubicaci[oó]n|dispuesto.?a.?mudarse/i,
+      /umzugsbereit/i,
+      /d[eé]m[eé]nagement/i,
+    ],
     profile: "preferences.willingToRelocate",
     type: "radio",
     transform: boolToYesNo,
@@ -261,6 +401,10 @@ export const FIELD_RULES: FieldRule[] = [
     id: "travel",
     patterns: [
       /willing.*travel|travel.?(requirement|willingness)|able.?to.?travel|comfortable.*travel/i,
+      // ES/DE/FR aliases (T10)
+      /dispuesto.?a.?viajar|\bviajar\b/i,
+      /reisebereitschaft/i,
+      /\bvoyager\b|d[eé]placements/i,
     ],
     profile: "preferences.willingToTravel",
     type: "radio",
@@ -292,21 +436,40 @@ export const FIELD_RULES: FieldRule[] = [
   },
   {
     id: "sponsorship",
-    patterns: [/sponsor/i, /require.*visa/i],
+    patterns: [
+      /sponsor/i,
+      /require.*visa/i,
+      // ES/DE/FR aliases (T10)
+      /patrocinio/i,
+      /sponsoring|arbeitserlaubnis/i,
+      /parrainage/i,
+    ],
     profile: "workAuth.sponsorshipNeeded",
     type: "radio",
     transform: boolToYesNo,
   },
   {
     id: "citizenship",
-    patterns: [/citizen/i],
+    patterns: [
+      /citizen/i,
+      // ES/DE/FR aliases (T10)
+      /ciudadan[ií]a/i,
+      /staatsangeh[oö]rigkeit/i,
+      /citoyennet[eé]/i,
+    ],
     profile: "workAuth.visaType",
     type: "radio",
     transform: visaToCitizenship,
   },
   {
     id: "visaStatus",
-    patterns: [/visa.?(status|type)|immigration.?status|work.?permit/i],
+    patterns: [
+      /visa.?(status|type)|immigration.?status|work.?permit/i,
+      // ES/DE/FR aliases (T10)
+      /estado.?de.?visa/i,
+      /visumstatus/i,
+      /statut.?de.?visa/i,
+    ],
     profile: "workAuth.visaType",
     type: "text",
   },
@@ -394,25 +557,49 @@ export const FIELD_RULES: FieldRule[] = [
   // --- Education ---
   {
     id: "degree",
-    patterns: [/highest.?(education|degree)|degree/i],
+    patterns: [
+      /highest.?(education|degree)|degree/i,
+      // ES/DE/FR aliases (T10)
+      /t[ií]tulo|grado.?acad[eé]mico/i,
+      /\babschluss\b/i,
+      /dipl[oô]me/i,
+    ],
     profile: "education[0].degree",
     type: "select",
   },
   {
     id: "school",
-    patterns: [/school|university|college|institution/i],
+    patterns: [
+      /school|university|college|institution/i,
+      // ES/DE/FR aliases (T10)
+      /universidad|\bescuela\b/i,
+      /universit[aä]t|\bschule\b/i,
+      /universit[eé]|[eé]cole/i,
+    ],
     profile: "education[0].school",
     type: "text",
   },
   {
     id: "major",
-    patterns: [/major|field.?of.?study|discipline|concentration/i],
+    patterns: [
+      /major|field.?of.?study|discipline|concentration/i,
+      // ES/DE/FR aliases (T10)
+      /especialidad|\bcarrera\b/i,
+      /studienfach/i,
+      /sp[eé]cialit[eé]|fili[eè]re/i,
+    ],
     profile: "education[0].major",
     type: "text",
   },
   {
     id: "gradYear",
-    patterns: [/graduation|grad.?year|year.?of.?completion/i],
+    patterns: [
+      /graduation|grad.?year|year.?of.?completion/i,
+      // ES/DE/FR aliases (T10)
+      /a[nñ]o.?de.?graduaci[oó]n/i,
+      /abschlussjahr/i,
+      /ann[eé]e.?de.?graduation|ann[eé]e.?d.?obtention/i,
+    ],
     profile: "education[0].year",
     type: "text",
   },
@@ -458,7 +645,13 @@ export const FIELD_RULES: FieldRule[] = [
   // inputs; the executor only attaches the resume to resumeUpload matches.
   {
     id: "resumeUpload",
-    patterns: [/resume|\bcv\b|curriculum.?vitae/i],
+    // "curriculum.?vitae" already matches French "curriculum vitae".
+    patterns: [
+      /resume|\bcv\b|curriculum.?vitae/i,
+      // ES/DE aliases (T10)
+      /curr[ií]culum|hoja.?de.?vida/i,
+      /lebenslauf/i,
+    ],
     profile: "meta.resumeFileName",
     type: "file",
   },
@@ -466,7 +659,13 @@ export const FIELD_RULES: FieldRule[] = [
   // --- Free-text → AI; detected and flagged, not deterministically filled. ---
   {
     id: "coverLetter",
-    patterns: [/cover.?letter/i],
+    patterns: [
+      /cover.?letter/i,
+      // ES/DE/FR aliases (T10)
+      /carta.?de.?presentaci[oó]n/i,
+      /anschreiben/i,
+      /lettre.?de.?motivation/i,
+    ],
     profile: null,
     type: "textarea",
     flags: ["ai_generate"],
