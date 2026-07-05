@@ -63,6 +63,7 @@ export class BackendClient {
         const res = await fetch(`${this.baseUrl}${path}`, { ...init, signal: controller.signal });
         if (res.ok) return (await res.json()) as T;
         if (res.status >= 500 && attempt < attempts) {
+          await res.body?.cancel(); // discard the unused response, release the connection
           await sleep(this.retryDelayMs * attempt);
           continue;
         }
