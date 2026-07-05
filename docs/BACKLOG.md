@@ -33,7 +33,7 @@ re-add finished phase/milestone work here.
 | ID | Task | Depends on | Status | Notes |
 |----|------|-----------|--------|-------|
 | T9 | **Formatting policy**: adopt Prettier (extension) + ruff-format (backend) in a single dedicated reformat PR with `.git-blame-ignore-revs`; add `--check` to CI. | T1 | done (PR #14, 2026-07-05) | Deliberately separate from T1 to keep that diff reviewable. Reformat landed as two dedicated commits (backend, extension); SHAs recorded in `.git-blame-ignore-revs`. |
-| T10 | **i18n field taxonomy**: add non-English label aliases (start: Spanish, German, French) to `rules/fieldRules.ts` with corpus fixtures per language. | — | ready | Aliases are data — low-risk, high-reach. |
+| T10 | **i18n field taxonomy**: add non-English label aliases (start: Spanish, German, French) to `rules/fieldRules.ts` with corpus fixtures per language. | — | done (PR #15, 2026-07-05) | Aliases are data — low-risk, high-reach. Added ES/DE/FR aliases for name/contact/location/experience/skills/preferences/work-auth/education/resume fields; `rules/i18n.test.ts` + `content/corpus.i18n.test.ts` cover them. US-specific rules (usAuthorized, clearance) left English-only. |
 | T11 | **Options profile import/export**: JSON export/import of the local profile (privacy story: user owns their data; also enables backup/migration). | — | ready | Local-only; no server involvement. |
 | T12 | **Firefox (MV3) feasibility spike**: assess manifest + `chrome.*`→`browser.*` gaps; document findings in docs/, no port unless trivial. | — | ready | Timebox; outcome is a doc, not necessarily code. |
 
