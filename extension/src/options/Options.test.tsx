@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Options } from "./Options";
@@ -150,5 +150,50 @@ describe("Options (profile editor)", () => {
     render(<Options />);
     await screen.findByText("Your Profile");
     expect(screen.getByLabelText("Resume file")).toBeInTheDocument();
+  });
+});
+
+describe("Options — Settings panel backend connection test (T6)", () => {
+  beforeEach(() => {
+    useProfileStore.setState({ profile: emptyProfile(), loaded: false });
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports a reachable backend, including whether AI is enabled", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({ status: "ok", ai_enabled: true }),
+      })),
+    );
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: /test connection/i }));
+
+    expect(await screen.findByText(/connected/i)).toBeInTheDocument();
+    expect(screen.getByText(/ai enabled/i)).toBeInTheDocument();
+  });
+
+  it("reports a clear, non-blocking error for an unreachable backend", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    render(<Options />);
+    await screen.findByText("Your Profile");
+    await userEvent.click(screen.getByRole("tab", { name: "settings" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: /test connection/i }));
+
+    expect(await screen.findByText(/not reachable/i)).toBeInTheDocument();
+    // Saving settings still works even though the connection test failed.
+    expect(screen.getByRole("button", { name: /save settings/i })).toBeEnabled();
   });
 });

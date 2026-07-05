@@ -9,7 +9,7 @@ import {
   saveAutofillOnNavigation,
   saveBackendUrl,
 } from "@/storage/settings";
-import { BackendClient } from "@/api/client";
+import { BackendClient, checkBackendHealth } from "@/api/client";
 import { saveResumeFile } from "@/storage/resumeFile";
 import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
 
@@ -519,10 +519,17 @@ function EducationEntry({ edu, index, onUpdate, onRemove }: EducationEntryProps)
 // Settings panel
 // ---------------------------------------------------------------------------
 
+type ConnectionTestState =
+  | { status: "idle" }
+  | { status: "testing" }
+  | { status: "ok"; aiEnabled: boolean }
+  | { status: "error"; error: string };
+
 function SettingsPanel() {
   const [url, setUrl] = useState("");
   const [autofillOnNav, setAutofillOnNav] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [test, setTest] = useState<ConnectionTestState>({ status: "idle" });
 
   useEffect(() => {
     void loadBackendUrl().then(setUrl);
@@ -533,6 +540,14 @@ function SettingsPanel() {
     await saveBackendUrl(url.trim());
     await saveAutofillOnNavigation(autofillOnNav);
     setSaved(true);
+  };
+
+  const onTestConnection = async () => {
+    setTest({ status: "testing" });
+    const result = await checkBackendHealth(url.trim() || "http://localhost:8000");
+    setTest(
+      result.ok ? { status: "ok", aiEnabled: result.aiEnabled } : { status: "error", error: result.error },
+    );
   };
 
   return (
@@ -546,6 +561,23 @@ function SettingsPanel() {
         <code className="ml-1 rounded bg-gray-100 px-1">backend/.env</code> for AI-powered parsing.
       </p>
       <TextField label="Backend URL" value={url} onChange={setUrl} placeholder="http://localhost:8000" />
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          onClick={onTestConnection}
+          disabled={test.status === "testing"}
+          className="rounded-md border border-gray-300 px-3 py-1 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        >
+          {test.status === "testing" ? "Testing…" : "Test connection"}
+        </button>
+        {test.status === "ok" && (
+          <span className="text-sm text-green-600">
+            Connected ✓ {test.aiEnabled ? "(AI enabled)" : "(AI keys not configured — deterministic fill still works)"}
+          </span>
+        )}
+        {test.status === "error" && (
+          <span className="text-sm text-red-600">Not reachable: {test.error}</span>
+        )}
+      </div>
       <div className="mt-4">
         <CheckField
           label="Continue filling automatically across pages of the same application (multi-step wizards)"

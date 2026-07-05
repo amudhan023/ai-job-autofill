@@ -126,7 +126,7 @@ async function handle(
         return { ok: true, answer: { answer: cached.answer, category: cached.category, model: cached.model }, cached: true };
       }
       const client = await getBackendClient();
-      if (!client) return { ok: false, error: "AI backend not configured" };
+      if (!client) return { ok: false, error: "Could not read backend settings" };
       const profile = await loadProfile();
       const res: AnswerResponse = await client.answer({
         question,
@@ -144,13 +144,13 @@ async function handle(
     }
     case "REQUEST_CLASSIFY_BATCH": {
       const client = await getBackendClient();
-      if (!client) return { ok: false, error: "AI backend not configured" };
+      if (!client) return { ok: false, error: "Could not read backend settings" };
       const res = await client.classifyBatch(message.questions ?? []);
       return { ok: true, categories: res.categories };
     }
     case "REQUEST_COVER_LETTER": {
       const client = await getBackendClient();
-      if (!client) return { ok: false, error: "AI backend not configured" };
+      if (!client) return { ok: false, error: "Could not read backend settings" };
       const profile = await loadProfile();
       const res: CoverLetterResponse = await client.coverLetter({
         profileSummary: summarizeProfile(profile),
