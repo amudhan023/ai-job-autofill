@@ -105,9 +105,19 @@ describe("Popup", () => {
   });
 
   it("shows a clear, non-blocking error on the AI draft button when the backend is unreachable (T6)", async () => {
+    // A generic free-text field (no rule matched) gets the plain "AI draft"
+    // button — distinct from the coverLetter-ruled field, which gets the
+    // dedicated CoverLetterButton flow covered below (T7).
+    const genericAiResult: FillResult = {
+      ...sampleResult,
+      matches: [
+        sampleResult.matches[0],
+        { fieldId: "2", label: "Why this role?", type: "textarea", ruleId: null, profilePath: null, value: null, confidence: 0, tier: "low", flags: ["ai_generate"], reason: "Free-text." },
+      ],
+    };
     respondWith((msg) => {
       if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
-      if (msg.type === "FILL_FORM") return { ok: true, result: sampleResult };
+      if (msg.type === "FILL_FORM") return { ok: true, result: genericAiResult };
       if (msg.type === "AI_DRAFT_FIELD") return { ok: false, error: "Failed to fetch" };
       return { ok: true };
     });
@@ -121,6 +131,80 @@ describe("Popup", () => {
     expect(retryButton).toHaveAttribute("title", expect.stringMatching(/backend configured/i));
     // The rest of the popup (fill summary, never-submit assurance) stays
     // visible and interactive — an AI failure never blocks the deterministic UI.
+    expect(screen.getByText(/filled 3 of 5 fields/i)).toBeInTheDocument();
+  });
+});
+
+describe("Popup — cover letter generation (T7)", () => {
+  beforeEach(() => {
+    chromeMock().tabs.query.mockResolvedValue([{ id: 1 }]);
+  });
+
+  async function renderWithFillResult() {
+    respondWith((msg) => {
+      if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
+      if (msg.type === "FILL_FORM") return { ok: true, result: sampleResult };
+      return { ok: true };
+    });
+    render(<Popup />);
+    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await screen.findByText(/filled 3 of 5 fields/i);
+  }
+
+  it("shows a dedicated 'Generate cover letter' control for the coverLetter-ruled field, not the generic AI draft button", async () => {
+    await renderWithFillResult();
+    expect(screen.getByRole("button", { name: /generate cover letter/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "AI draft" })).not.toBeInTheDocument();
+  });
+
+  it("expands into a company/style form pre-filled with the company parsed from the job URL", async () => {
+    await renderWithFillResult();
+    await userEvent.click(screen.getByRole("button", { name: /generate cover letter/i }));
+
+    // sampleResult.url is https://boards.greenhouse.io/acme/jobs/1
+    expect(screen.getByLabelText(/company name/i)).toHaveValue("acme");
+    expect(screen.getByLabelText(/cover letter style/i)).toHaveValue("formal");
+    expect(screen.getByRole("button", { name: "Generate" })).toBeInTheDocument();
+  });
+
+  it("generates and marks the field drafted, sending the dedicated cover-letter message with company + style", async () => {
+    respondWith((msg) => {
+      if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
+      if (msg.type === "FILL_FORM") return { ok: true, result: sampleResult };
+      if (msg.type === "AI_DRAFT_COVER_LETTER") {
+        expect(msg).toMatchObject({ fieldId: "2", company: "acme", style: "formal" });
+        return { ok: true, value: "Dear Acme, ..." };
+      }
+      return { ok: true };
+    });
+    render(<Popup />);
+    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await screen.findByText(/filled 3 of 5 fields/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /generate cover letter/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+
+    expect(await screen.findByText("Drafted ✓")).toBeInTheDocument();
+  });
+
+  it("shows a clear, non-blocking error when the backend is unreachable", async () => {
+    respondWith((msg) => {
+      if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
+      if (msg.type === "FILL_FORM") return { ok: true, result: sampleResult };
+      if (msg.type === "AI_DRAFT_COVER_LETTER") return { ok: false, error: "Failed to fetch" };
+      return { ok: true };
+    });
+    render(<Popup />);
+    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+    await screen.findByText(/filled 3 of 5 fields/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /generate cover letter/i }));
+    await userEvent.click(screen.getByRole("button", { name: "Generate" }));
+
+    const retryButton = await screen.findByRole("button", { name: "Retry" });
+    expect(retryButton).toHaveAttribute("title", expect.stringMatching(/backend configured/i));
+    // Failure stays scoped to the cover-letter control — the rest of the
+    // popup remains visible and interactive.
     expect(screen.getByText(/filled 3 of 5 fields/i)).toBeInTheDocument();
   });
 });

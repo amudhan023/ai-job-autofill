@@ -70,3 +70,28 @@ export async function draftFieldViaExtension(
     })) as DraftFieldResult;
   }, fieldId);
 }
+
+/**
+ * Sends AI_DRAFT_COVER_LETTER (T7) to the active tab for a fieldId from a
+ * prior fillViaExtension() call — the dedicated cover-letter flow, distinct
+ * from the generic draftFieldViaExtension above.
+ */
+export async function draftCoverLetterViaExtension(
+  worker: Worker,
+  fieldId: string,
+  company: string,
+  style: "formal" | "startup" | "creative" = "formal",
+): Promise<DraftFieldResult> {
+  return worker.evaluate(
+    async ({ id, company, style }) => {
+      const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      return (await chrome.tabs.sendMessage(tab.id!, {
+        type: "AI_DRAFT_COVER_LETTER",
+        fieldId: id,
+        company,
+        style,
+      })) as DraftFieldResult;
+    },
+    { id: fieldId, company, style },
+  );
+}
