@@ -103,4 +103,24 @@ describe("Popup", () => {
     await userEvent.click(screen.getByRole("button", { name: /edit profile/i }));
     expect(chromeMock().runtime.openOptionsPage).toHaveBeenCalledOnce();
   });
+
+  it("shows a clear, non-blocking error on the AI draft button when the backend is unreachable (T6)", async () => {
+    respondWith((msg) => {
+      if (msg.type === "GET_PAGE_STATUS") return { ok: true, platform: "greenhouse" };
+      if (msg.type === "FILL_FORM") return { ok: true, result: sampleResult };
+      if (msg.type === "AI_DRAFT_FIELD") return { ok: false, error: "Failed to fetch" };
+      return { ok: true };
+    });
+    render(<Popup />);
+    await userEvent.click(await screen.findByRole("button", { name: /autofill this application/i }));
+
+    const draftButton = await screen.findByRole("button", { name: "AI draft" });
+    await userEvent.click(draftButton);
+
+    const retryButton = await screen.findByRole("button", { name: /retry ai draft/i });
+    expect(retryButton).toHaveAttribute("title", expect.stringMatching(/backend configured/i));
+    // The rest of the popup (fill summary, never-submit assurance) stays
+    // visible and interactive — an AI failure never blocks the deterministic UI.
+    expect(screen.getByText(/filled 3 of 5 fields/i)).toBeInTheDocument();
+  });
 });

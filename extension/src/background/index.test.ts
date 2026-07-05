@@ -51,3 +51,70 @@ describe("background service worker — side panel wiring", () => {
     expect(chromeMock().sidePanel.setOptions).not.toHaveBeenCalled();
   });
 });
+
+describe("background service worker — backend-unreachable UX (T6)", () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    await import("./index");
+  });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("REQUEST_AI_ANSWER surfaces a clear error when the backend is unreachable, without throwing", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    const res = (await dispatch({
+      type: "REQUEST_AI_ANSWER",
+      question: "Describe a time...",
+      jdSummary: "",
+    })) as { ok: boolean; error?: string };
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/Failed to fetch/);
+  });
+
+  it("REQUEST_AI_ANSWER succeeds against the zero-config localhost:8000 default (no backendUrl saved)", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        answer: "Drafted answer",
+        confidence: 0.9,
+        model: "m",
+        category: "BEHAVIORAL",
+        retrieved: [],
+        stubbed: false,
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = (await dispatch({
+      type: "REQUEST_AI_ANSWER",
+      question: "Describe a time...",
+      jdSummary: "",
+    })) as { ok: boolean; answer?: { answer: string } };
+    expect(res.ok).toBe(true);
+    expect(res.answer?.answer).toBe("Drafted answer");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/ai/answer",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("REQUEST_CLASSIFY_BATCH surfaces a clear error when the backend is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+    const res = (await dispatch({
+      type: "REQUEST_CLASSIFY_BATCH",
+      questions: ["Why do you want this role?"],
+    })) as { ok: boolean; error?: string };
+    expect(res.ok).toBe(false);
+    expect(res.error).toMatch(/Failed to fetch/);
+  });
+});

@@ -149,7 +149,7 @@ See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
 | Cover letter generation (Opus) + styles | ✅ | `backend/app/services/cover_letter.py` |
 | Analytics dashboard (fill rate, AI assist, by platform) | ✅ | `extension/src/options/Dashboard.tsx`, `storage/analytics.ts` |
 | Onboarding flow (welcome → resume → review) | ✅ | `extension/src/options/Onboarding.tsx` |
-| Settings (AI backend URL) | ✅ | `extension/src/options/Options.tsx`, `storage/settings.ts` |
+| Settings (AI backend URL, connection test) | ✅ | `extension/src/options/Options.tsx`, `storage/settings.ts` |
 | Keyboard shortcut (Alt+Shift+F) | ✅ | `manifest.json` + `background/index.ts` |
 | CWS launch docs (privacy, store listing) | ✅ | `docs/PRIVACY.md`, `docs/STORE_LISTING.md` |
 
@@ -178,6 +178,15 @@ application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
 - **Embeddings = Voyage AI** (`voyage-3.5-lite`) to honor the "no OpenAI on primary
   path" principle. See `PLAN.md` changelog.
 - **Model IDs**: cover-letter model corrected to `claude-opus-4-8`.
+- **Backend-unreachable UX**: `BackendClient` (`extension/src/api/client.ts`) retries
+  once, with a short backoff, on a raw network error or a 5xx — never on a timeout
+  (retrying a slow backend would just double the wait) or a 4xx (retrying a client
+  error can't help). `getBackendClient()` now shares `loadBackendUrl()`'s zero-config
+  `localhost:8000` default, so AI features and resume-parse behave consistently when
+  nothing's been configured. Settings has a "Test connection" button
+  (`checkBackendHealth`, hits `/health`). AI failures are always inline/non-blocking
+  (`AiDraftButton`'s error state, resume-upload's connection-error copy) and never
+  degrade or delay deterministic fill beyond `aiEnrich`'s fixed 2.5s budget.
 
 ## Requires keys / infra to go live (logic is built + tested with fakes)
 - **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) to switch
