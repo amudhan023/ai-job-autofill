@@ -122,7 +122,14 @@ export type ExtensionMessage =
   | { type: "GET_PAGE_STATUS" }
   | { type: "PROFILE_UPDATED"; profile: UserProfile }
   /** Generate an AI draft for a free-text field from the last fill (M5). */
-  | { type: "AI_DRAFT_FIELD"; fieldId: string };
+  | { type: "AI_DRAFT_FIELD"; fieldId: string }
+  /**
+   * Generate a tailored cover letter via the dedicated backend endpoint (T7)
+   * and write it into a cover-letter textarea field — distinct from the
+   * generic Q&A draft above because it needs company/style inputs and uses
+   * the cover-letter-specific prompt, not a one-line free-text answer.
+   */
+  | { type: "AI_DRAFT_COVER_LETTER"; fieldId: string; company: string; style: "formal" | "startup" | "creative" };
 
 /** Multi-page fill-session progress shown in the popup (M4). */
 export interface SessionSummary {

@@ -46,6 +46,9 @@ async function handle(message: ExtensionMessage): Promise<ExtensionResponse> {
     case "AI_DRAFT_FIELD": {
       return draftField(message.fieldId);
     }
+    case "AI_DRAFT_COVER_LETTER": {
+      return draftCoverLetter(message.fieldId, message.company, message.style);
+    }
     default:
       return { ok: false, error: `Unhandled message: ${(message as { type: string }).type}` };
   }
@@ -89,6 +92,38 @@ async function draftField(fieldId: string): Promise<ExtensionResponse> {
   const written = await writeValueToField(fieldId, text);
   if (!written) return { ok: false, error: "Could not write to the field." };
   return { ok: true, value: text, cached: response.cached };
+}
+
+/**
+ * Cover letter generation (T7): unlike `draftField` above, this calls the
+ * dedicated `/ai/cover-letter` backend endpoint (via the background worker's
+ * REQUEST_COVER_LETTER) with the scraped JD, a company name, and a tone —
+ * producing a full tailored letter rather than a one-line free-text answer.
+ * The result is only ever written into the form for review — never submitted.
+ */
+async function draftCoverLetter(
+  fieldId: string,
+  company: string,
+  style: "formal" | "startup" | "creative",
+): Promise<ExtensionResponse> {
+  const handle = getLastHandle(fieldId);
+  if (!handle) return { ok: false, error: "Field not found — run Autofill first." };
+
+  const jdSummary = scrapeJobDescription();
+  const response = (await chrome.runtime.sendMessage({
+    type: "REQUEST_COVER_LETTER",
+    jdSummary,
+    company,
+    style,
+  })) as { ok: boolean; coverLetter?: { letter: string }; error?: string };
+
+  const text = response?.coverLetter?.letter ?? "";
+  if (!response?.ok || !text.trim()) {
+    return { ok: false, error: response?.error ?? "No cover letter generated." };
+  }
+  const written = await writeValueToField(fieldId, text);
+  if (!written) return { ok: false, error: "Could not write to the field." };
+  return { ok: true, value: text };
 }
 
 // ---------------------------------------------------------------------------

@@ -6,6 +6,7 @@ import type {
   FillResult,
   SessionSummary,
 } from "@/shared/types";
+import { companyFromUrl } from "@/storage/history";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 
 async function activeTabId(): Promise<number | null> {
@@ -197,7 +198,11 @@ function FillSummary({ result }: { result: FillResult }) {
               {/* No AI drafts into file inputs (e.g. a cover-letter UPLOAD
                   matched by the coverLetter rule) — text can't go there. */}
               {m.flags.includes("ai_generate") && m.type !== "file" && (
-                <AiDraftButton fieldId={m.fieldId} />
+                m.ruleId === "coverLetter" ? (
+                  <CoverLetterButton fieldId={m.fieldId} url={result.url} />
+                ) : (
+                  <AiDraftButton fieldId={m.fieldId} />
+                )
               )}
               <ConfidenceBadge match={m} />
             </span>
@@ -241,5 +246,78 @@ function AiDraftButton({ fieldId }: { fieldId: string }) {
     >
       {state === "working" ? "Drafting…" : state === "error" ? "Retry AI draft" : "AI draft"}
     </button>
+  );
+}
+
+type CoverLetterStyle = "formal" | "startup" | "creative";
+
+/**
+ * Cover letter generation (T7): the dedicated backend endpoint needs a
+ * company name and tone the generic "AI draft" button above can't supply, so
+ * a cover-letter-matched field gets this small inline form instead. Generates
+ * via the content script (REQUEST_COVER_LETTER, background-proxied) and
+ * writes the result into the field for review — never submitted.
+ */
+function CoverLetterButton({ fieldId, url }: { fieldId: string; url: string }) {
+  const [open, setOpen] = useState(false);
+  const [company, setCompany] = useState(() => companyFromUrl(url));
+  const [style, setStyle] = useState<CoverLetterStyle>("formal");
+  const [state, setState] = useState<"idle" | "working" | "done" | "error">("idle");
+
+  const onGenerate = async () => {
+    setState("working");
+    const res = await sendToActiveTab({ type: "AI_DRAFT_COVER_LETTER", fieldId, company, style });
+    setState(res && res.ok ? "done" : "error");
+  };
+
+  if (state === "done") return <span className="text-[11px] text-green-600">Drafted ✓</span>;
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="rounded border border-blue-300 px-1.5 py-0.5 text-[11px] text-blue-700 hover:bg-blue-50"
+      >
+        Generate cover letter
+      </button>
+    );
+  }
+
+  return (
+    <span className="flex shrink-0 items-center gap-1">
+      <input
+        aria-label="Company name"
+        value={company}
+        onChange={(e) => setCompany(e.target.value)}
+        placeholder="Company"
+        className="w-20 rounded border border-gray-300 px-1 py-0.5 text-[11px]"
+      />
+      <select
+        aria-label="Cover letter style"
+        value={style}
+        onChange={(e) => setStyle(e.target.value as CoverLetterStyle)}
+        className="rounded border border-gray-300 px-1 py-0.5 text-[11px]"
+      >
+        <option value="formal">Formal</option>
+        <option value="startup">Startup</option>
+        <option value="creative">Creative</option>
+      </select>
+      <button
+        onClick={onGenerate}
+        disabled={state === "working"}
+        title={
+          state === "error"
+            ? "Generation failed — is the AI backend configured in Options → Settings?"
+            : "Generate a tailored cover letter with AI"
+        }
+        className={`rounded border px-1.5 py-0.5 text-[11px] ${
+          state === "error"
+            ? "border-red-300 text-red-600"
+            : "border-blue-300 text-blue-700 hover:bg-blue-50"
+        } disabled:opacity-50`}
+      >
+        {state === "working" ? "Drafting…" : state === "error" ? "Retry" : "Generate"}
+      </button>
+    </span>
   );
 }
