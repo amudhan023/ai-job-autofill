@@ -32,7 +32,7 @@ re-add finished phase/milestone work here.
 
 | ID | Task | Depends on | Status | Notes |
 |----|------|-----------|--------|-------|
-| T9 | **Formatting policy**: adopt Prettier (extension) + ruff-format (backend) in a single dedicated reformat PR with `.git-blame-ignore-revs`; add `--check` to CI. | T1 | ready | Deliberately separate from T1 to keep that diff reviewable. |
+| T9 | **Formatting policy**: adopt Prettier (extension) + ruff-format (backend) in a single dedicated reformat PR with `.git-blame-ignore-revs`; add `--check` to CI. | T1 | in-progress | Deliberately separate from T1 to keep that diff reviewable. |
 | T10 | **i18n field taxonomy**: add non-English label aliases (start: Spanish, German, French) to `rules/fieldRules.ts` with corpus fixtures per language. | — | ready | Aliases are data — low-risk, high-reach. |
 | T11 | **Options profile import/export**: JSON export/import of the local profile (privacy story: user owns their data; also enables backup/migration). | — | ready | Local-only; no server involvement. |
 | T12 | **Firefox (MV3) feasibility spike**: assess manifest + `chrome.*`→`browser.*` gaps; document findings in docs/, no port unless trivial. | — | ready | Timebox; outcome is a doc, not necessarily code. |
