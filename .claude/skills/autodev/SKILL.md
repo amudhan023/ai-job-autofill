@@ -19,24 +19,45 @@ are hard constraints on every task, not suggestions.
 
 ## Outer loop
 
-Repeat the **Per-task workflow** below until one of these stop conditions is
-hit, then report a summary and end the skill:
+The outer loop stays thin on purpose: it never runs the per-task workflow
+itself. Each task's full implement → test → PR → review → CI → merge cycle
+runs inside a **fresh subagent** (Agent tool, default/general-purpose type —
+never `subagent_type: "fork"`, since a fork inherits this session's
+accumulated context, which is exactly what this is meant to avoid). That
+keeps this orchestrating session's context flat across the whole backlog
+instead of accumulating every prior task's diffs, tool output, and CI logs.
+
+Per iteration:
+
+1. Sync `main` and parse `docs/BACKLOG.md` fresh (see Task selection) — don't
+   trust a stale in-memory copy, status may have changed from a prior
+   iteration's merge.
+2. Pick the next eligible task.
+3. Spawn one fresh Agent whose prompt is self-contained: the task id and
+   one-line summary from the backlog row, an instruction to read `CLAUDE.md`
+   and this file's **Per-task workflow** section, and to execute steps 1–12
+   there verbatim for that task. Ask it to report back only the outcome
+   (merged PR number, or `blocked(<reason>)`) — not a blow-by-blow of what it
+   did.
+4. Record that outcome in this session's running summary. Do not read the
+   subagent's transcript or tool output back into this session beyond its
+   final report.
+5. Check the stop conditions below; if none are hit, go back to step 1.
+
+Stop conditions — report a summary and end the skill when:
 
 - `docs/BACKLOG.md` has no row with Status `ready` whose every `Depends on`
   task is `done`.
 - The task just attempted had to be marked `blocked(<reason>)` and no other
   ready task remains.
-- The same task fails CI (or review) after 3 fix-and-repush rounds — mark it
-  `blocked(ci-unresolved: <short reason>)`, leave its branch/PR open for a
-  human, and continue to the next ready task.
+- The same task fails CI (or review) after 3 fix-and-repush rounds — the
+  subagent should mark it `blocked(ci-unresolved: <short reason>)`, leave its
+  branch/PR open for a human, and report that back rather than retrying
+  further; continue to the next ready task.
 - A task turns out to require something the guardrails forbid (large
   refactor, touching a Blocked-table item's credentials, ambiguity that risks
-  zero-mutation/never-clobber) — mark `blocked(<reason>)`, do not guess, move
-  on.
-
-Re-read `docs/BACKLOG.md` fresh at the start of every iteration (don't trust
-a stale in-memory copy — status may have changed from a prior iteration's
-merge).
+  zero-mutation/never-clobber) — the subagent should mark `blocked(<reason>)`
+  rather than guess, and report that back.
 
 ## Task selection
 
@@ -53,6 +74,10 @@ merge).
    existing functionality (guardrail).
 
 ## Per-task workflow
+
+Runs inside the spawned subagent (see Outer loop) — the subagent starts with
+no memory of prior tasks, so it must read `CLAUDE.md` and the specific task's
+backlog row itself before starting.
 
 ### 1. Mark in-progress
 Edit the task's Status cell in `docs/BACKLOG.md` to `in-progress` as the
@@ -153,11 +178,15 @@ Once every required check is green:
 ```bash
 gh pr merge <PR-number> --squash --delete-branch
 ```
-Then `git checkout main && git pull origin main` to pick up the merge before
-starting the next task.
+Then `git checkout main && git pull origin main` to leave the working tree
+clean on `main` for whatever runs next.
 
-### 13. Continue
-Go back to **Task selection** for the next iteration.
+### 13. Report back
+This is the subagent's last step — it ends here. Return a short report to the
+orchestrator: the outcome (merged PR number, or `blocked(<reason>)`) and
+anything the next iteration needs to know (e.g. a follow-on task it noticed).
+Do not continue to another task inside this same subagent — the orchestrator
+spawns a new one for that (see Outer loop).
 
 ## Guardrails (hard constraints, not suggestions)
 
@@ -179,6 +208,10 @@ Go back to **Task selection** for the next iteration.
 
 ## Token efficiency
 
+- Run each task in its own fresh subagent (see Outer loop) so the
+  orchestrating session's context doesn't accumulate diffs, tool output, and
+  CI logs across the whole backlog — that's the main lever here, bigger than
+  any of the points below.
 - Don't re-scan the whole repo each iteration — `docs/BACKLOG.md` +
   `docs/IMPLEMENTATION.md` + the files the current task touches is enough
   context.
