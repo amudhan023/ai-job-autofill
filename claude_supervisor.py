@@ -1,5 +1,32 @@
 #!/usr/bin/env python3
 
+# =========================================================
+# LEARNINGS FROM PRIOR RUNS (update this if you change the approach)
+# =========================================================
+# - Do NOT drive the interactive `claude` TUI via pexpect/PTY. Writing a
+#   multi-line prompt in one pty write() lands as a paste-like burst, and
+#   Claude Code's compose box treats bursts as literal unsent text rather
+#   than a submitted message. Two real runs sat idle for the full 1800s
+#   timeout with zero backlog progress before this was caught. Use headless
+#   `claude -p "<prompt>"` instead: no TUI, no submit race, no pexpect
+#   dependency to install.
+# - Headless mode has no human to answer permission prompts. Use
+#   --permission-mode + --allowedTools scoped to what the autodev workflow
+#   actually runs (git/gh/npm/pytest/docker/file edits) rather than
+#   --dangerously-skip-permissions — the CLI's own --help says that flag is
+#   meant for network-isolated sandboxes, not a real dev machine with push
+#   access.
+# - TOKEN_ERROR_PATTERNS substring-matches raw stdout/stderr. The old
+#   interactive-mode output included marketing banner text ("Fable 5 is
+#   back... weekly usage limit") that matched "usage limit" and triggered a
+#   multi-hour false-positive sleep with no real rate limit hit. Headless
+#   `-p` output is plain text without that banner, but if false positives
+#   resurface, tighten these patterns rather than trusting a bare substring
+#   match.
+# - Separately from script bugs: watch actual account usage — one run
+#   surfaced "You've used 90% of your session limit" from the CLI itself.
+# =========================================================
+
 import os
 import subprocess
 import sys
