@@ -150,6 +150,21 @@ localize. Covered by `extension/src/rules/i18n.test.ts` (rule-matching per
 language) and `extension/src/content/corpus.i18n.test.ts` (full
 detect-and-fill corpus fixtures per language, mirroring `corpus.test.ts`).
 
+### Profile import/export (T11, 2026-07-05)
+
+`extension/src/storage/profile.ts` gained `exportProfileJson` (pretty-printed
+JSON of the current `UserProfile`) and `importProfileJson` (parses + runs the
+result through the existing `migrateProfile` schema-migration path, so an
+older export still backfills newly-added fields the same way a stored profile
+does). Wired into the Options "Settings" tab as a "Profile data" section:
+an "Export profile (JSON)" button downloads the file client-side (Blob +
+`URL.createObjectURL`, no server involved), and "Import profile…" reads a
+chosen file, asks for confirmation since it replaces the whole profile, then
+persists it via the existing `useProfileStore`. Covered by
+`extension/src/storage/profile.test.ts` (round-trip, migration backfill,
+invalid-input errors) and new cases in `extension/src/options/Options.test.tsx`
+(export triggers a download, import persists/rejects/cancels).
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

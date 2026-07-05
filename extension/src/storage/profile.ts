@@ -27,3 +27,31 @@ export function onProfileChanged(cb: (profile: UserProfile) => void): void {
     }
   });
 }
+
+/**
+ * Serialize the profile for local export (backup/migration). Local-only:
+ * this never leaves the device unless the user explicitly saves the
+ * downloaded file elsewhere.
+ */
+export function exportProfileJson(profile: UserProfile): string {
+  return JSON.stringify(profile, null, 2);
+}
+
+/**
+ * Parse a previously exported profile JSON string back into a valid
+ * `UserProfile`, backfilling any fields missing from an older export the
+ * same way `loadProfile` migrates older stored profiles. Throws a
+ * descriptive `Error` if `json` isn't valid JSON or isn't an object.
+ */
+export function importProfileJson(json: string): UserProfile {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    throw new Error("Not valid JSON.");
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("Expected a profile object.");
+  }
+  return migrateProfile(parsed);
+}
