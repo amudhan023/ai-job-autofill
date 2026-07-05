@@ -33,8 +33,7 @@ export async function seedLocalStorage(
   }, items);
 }
 
-/** Sends FILL_FORM to the active tab and returns the full response (matches, session). */
-export async function fillViaExtension(worker: Worker): Promise<{
+export interface FillViaExtensionResult {
   ok: boolean;
   result: {
     filledCount: number;
@@ -42,23 +41,32 @@ export async function fillViaExtension(worker: Worker): Promise<{
     matches: { fieldId: string; label: string; value: string | null }[];
   };
   session?: { pages: number; fieldsFilled: number };
-}> {
+}
+
+/** Sends FILL_FORM to the active tab and returns the full response (matches, session). */
+export async function fillViaExtension(worker: Worker): Promise<FillViaExtensionResult> {
   return worker.evaluate(async () => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    return (await chrome.tabs.sendMessage(tab.id!, { type: "FILL_FORM" })) as never;
+    return (await chrome.tabs.sendMessage(tab.id!, { type: "FILL_FORM" })) as FillViaExtensionResult;
   });
+}
+
+export interface DraftFieldResult {
+  ok: boolean;
+  value?: string;
+  error?: string;
 }
 
 /** Sends AI_DRAFT_FIELD to the active tab for a fieldId from a prior fillViaExtension() call. */
 export async function draftFieldViaExtension(
   worker: Worker,
   fieldId: string,
-): Promise<{ ok: boolean; value?: string; error?: string }> {
+): Promise<DraftFieldResult> {
   return worker.evaluate(async (id) => {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     return (await chrome.tabs.sendMessage(tab.id!, {
       type: "AI_DRAFT_FIELD",
       fieldId: id,
-    })) as never;
+    })) as DraftFieldResult;
   }, fieldId);
 }
