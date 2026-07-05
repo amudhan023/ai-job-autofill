@@ -146,7 +146,7 @@ See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
 
 | Area | Status | Location |
 |---|---|---|
-| Cover letter generation (Opus) + styles | ✅ | `backend/app/services/cover_letter.py` |
+| Cover letter generation (Opus) + styles, end-to-end from the popup (T7) | ✅ | `backend/app/services/cover_letter.py`, `extension/src/popup/Popup.tsx` (`CoverLetterButton`), `content/index.ts` (`draftCoverLetter`), `background/index.ts` (`REQUEST_COVER_LETTER`) |
 | Analytics dashboard (fill rate, AI assist, by platform) | ✅ | `extension/src/options/Dashboard.tsx`, `storage/analytics.ts` |
 | Onboarding flow (welcome → resume → review) | ✅ | `extension/src/options/Onboarding.tsx` |
 | Settings (AI backend URL, connection test) | ✅ | `extension/src/options/Options.tsx`, `storage/settings.ts` |
