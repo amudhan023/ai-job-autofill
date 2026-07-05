@@ -31,7 +31,9 @@ class Settings(BaseSettings):
     classifier_model: str = "claude-haiku-4-5"
     embedding_model: str = "voyage-3.5-lite"
 
-    database_url: str = "postgresql://localhost:5432/jobautofill"
+    # Zero-infra default: a local SQLite file. Postgres/pgvector is opt-in —
+    # point this at a postgresql:// URL (and install a Postgres driver).
+    database_url: str = "sqlite:///./data/app.db"
     redis_url: str = "redis://localhost:6379/0"
 
     @property

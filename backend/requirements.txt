@@ -14,5 +14,9 @@ anthropic>=0.40
 pdfminer.six>=20240706
 python-docx>=1.1.2
 
+# Persistence (Phase 5 — SQLite by default; Postgres/pgvector opt-in via
+# DATABASE_URL, requires installing a Postgres driver separately)
+sqlalchemy>=2.0
+
 # Observability (Phase 3)
 # langsmith>=0.1
