@@ -138,7 +138,7 @@ See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
 | Resume parse (text extract → Claude → profile) | ✅ | `backend/app/services/resume.py` |
 | JD extraction + skill gap | ✅ | `backend/app/services/jd.py` |
 | Question classifier (LLM + keyword fallback) | ✅ | `backend/app/services/classifier.py` |
-| In-memory RAG (chunk + cosine) | ✅ | `backend/app/services/rag.py` |
+| RAG (chunk + cosine; in-memory by default, optional SQLite persistence) | ✅ | `backend/app/services/rag.py`, `db.py` |
 | STAR answer generation | ✅ | `backend/app/services/answers.py` |
 | Extension backend client + AI proxy + JD scraper | ✅ | `extension/src/api/`, `content/jdScraper.ts` |
 
@@ -183,8 +183,12 @@ application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
 - **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) to switch
   the injectable providers from stub → real. All service logic is unit-tested
   with `FakeLLM`/`FakeEmbeddings`; live calls are the only untested edge.
-- **Persistence**: profile store and RAG are in-memory; swap for Postgres +
-  pgvector (storage concern only — interfaces are stable).
+- **Persistence**: profile store (`backend/app/services/db.py`) is SQLite by
+  default (zero-infra — `DATABASE_URL=sqlite:///./data/app.db`). RAG's
+  `VectorStore` gains the same SQLAlchemy backing as an opt-in (construct with
+  `user_id=...` to persist across requests; every existing call site omits it
+  and stays purely in-memory/ephemeral, unchanged). Postgres/pgvector is
+  opt-in via `DATABASE_URL` — same interfaces, install a Postgres driver.
 - **Auth0, real job-board APIs (LinkedIn/Indeed)**: plug concrete `JobProvider`
   implementations behind the existing interface; needs partner credentials.
 - **Real resume binary parsing**: `pdfminer.six` / `python-docx` are wired and

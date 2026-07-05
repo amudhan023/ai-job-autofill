@@ -1,8 +1,12 @@
-"""In-memory RAG over resume chunks.
+"""RAG over resume chunks — in-memory cosine store, with an opt-in SQLite
+persistence layer (app/services/db.py) so an index can survive across
+requests/processes for a given user_id.
 
-The plan targets pgvector for persistence at scale; for the service skeleton we
-use an in-memory cosine store, which keeps the retrieval logic identical and
-fully unit-testable. Swapping in pgvector later is a storage concern only.
+Retrieval logic (cosine ranking) is always in-memory and identical either
+way; persistence is a storage concern layered underneath via `user_id`.
+Existing callers that don't pass `user_id` (e.g. app/api/ai.py's per-request
+ephemeral store) are unaffected — nothing is persisted unless a user_id is
+given.
 """
 from __future__ import annotations
 
@@ -39,8 +43,17 @@ def cosine(a: list[float], b: list[float]) -> float:
 @dataclass
 class VectorStore:
     embeddings: Embeddings
+    user_id: str | None = None
     _texts: list[str] = field(default_factory=list)
     _vecs: list[list[float]] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.user_id is not None:
+            from app.services.db import get_rag_chunk_store
+
+            texts, vecs = get_rag_chunk_store().load(self.user_id)
+            self._texts.extend(texts)
+            self._vecs.extend(vecs)
 
     def add(self, texts: list[str]) -> None:
         if not texts:
@@ -48,6 +61,10 @@ class VectorStore:
         vecs = self.embeddings.embed(texts)
         self._texts.extend(texts)
         self._vecs.extend(vecs)
+        if self.user_id is not None:
+            from app.services.db import get_rag_chunk_store
+
+            get_rag_chunk_store().save(self.user_id, texts, vecs)
 
     def retrieve(self, query: str, k: int = 3) -> list[tuple[str, float]]:
         if not self._texts:
