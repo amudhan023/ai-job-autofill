@@ -59,7 +59,7 @@ convention.
 | `chrome.tabs.query`, `sendMessage`, `onActivated`, `onUpdated`, `TabChangeInfo` | `background/index.ts`, `popup/Popup.tsx` | Supported, no gap. |
 | `chrome.scripting.executeScript` | `popup/Popup.tsx` | Supported in Firefox (landed alongside MV3 `scripting` permission support, Firefox 102+). No gap. |
 | `chrome.commands.onCommand` | `background/index.ts` | Supported, no gap (already optional-chained: `chrome.commands?.onCommand`). |
-| `chrome.sidePanel.setOptions` / `.setPanelBehavior` | `background/index.ts` | **No Firefox equivalent** (see manifest table above) — already defensively optional-chained/try-caught for older Chrome, which incidentally means it silently no-ops on Firefix today rather than throwing, but the actual UX (open a panel on toolbar click) simply wouldn't work. |
+| `chrome.sidePanel.setOptions` / `.setPanelBehavior` | `background/index.ts` | **No Firefox equivalent** (see manifest table above) — already defensively optional-chained/try-caught for older Chrome, which incidentally means it would silently no-op on Firefox rather than throwing, but the actual UX (open a panel on toolbar click) simply wouldn't work. |
 
 No usage of `chrome.declarativeNetRequest`, `chrome.webRequest`,
 `chrome.identity`, or other high-friction MV3 APIs that commonly cause
