@@ -53,7 +53,10 @@ def make_engine(database_url: str) -> Engine:
 
     kwargs: dict = {}
     if is_sqlite:
-        kwargs["connect_args"] = {"check_same_thread": False}
+        # busy_timeout: SQLite allows one writer at a time; without this,
+        # a second concurrent write fails immediately with "database is
+        # locked" instead of waiting briefly for the first to finish.
+        kwargs["connect_args"] = {"check_same_thread": False, "timeout": 30}
     if is_sqlite_memory:
         kwargs["poolclass"] = StaticPool
 
@@ -100,7 +103,9 @@ class RagChunkStore:
     def load(self, user_id: str) -> tuple[list[str], list[list[float]]]:
         with self._Session() as session:
             rows = session.scalars(
-                select(RagChunkRecord).where(RagChunkRecord.user_id == user_id)
+                select(RagChunkRecord)
+                .where(RagChunkRecord.user_id == user_id)
+                .order_by(RagChunkRecord.id)
             ).all()
         texts = [r.text for r in rows]
         vecs = [_decode_vector(r.vector) for r in rows]
