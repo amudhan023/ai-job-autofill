@@ -236,9 +236,8 @@ application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
   degrade or delay deterministic fill beyond `aiEnrich`'s fixed 2.5s budget.
 
 ## Requires keys / infra to go live (logic is built + tested with fakes)
-- **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) to switch
-  the injectable providers from stub → real. All service logic is unit-tested
-  with `FakeLLM`/`FakeEmbeddings`; live calls are the only untested edge.
+- **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) or `GEMINI_API_KEY` to switch
+  the injectable providers from stub → real. You can specify the active provider using `LLM_PROVIDER` (e.g. `gemini` or `anthropic`) and `EMBEDDINGS_PROVIDER` (e.g. `gemini` or `voyage`) in `.env`. All service logic is unit-tested.
 - **Persistence**: profile store (`backend/app/services/db.py`) is SQLite by
   default (zero-infra — `DATABASE_URL=sqlite:///./data/app.db`). RAG's
   `VectorStore` gains the same SQLAlchemy backing as an opt-in (construct with
