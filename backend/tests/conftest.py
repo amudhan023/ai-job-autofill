@@ -7,6 +7,11 @@ import os
 
 import pytest
 
+# Ensure tests don't load real API keys from .env
+os.environ["ANTHROPIC_API_KEY"] = ""
+os.environ["GEMINI_API_KEY"] = ""
+os.environ["VOYAGE_API_KEY"] = ""
+
 os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 
