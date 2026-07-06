@@ -235,9 +235,20 @@ application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
   (`AiDraftButton`'s error state, resume-upload's connection-error copy) and never
   degrade or delay deterministic fill beyond `aiEnrich`'s fixed 2.5s budget.
 
-## Requires keys / infra to go live (logic is built + tested with fakes)
-- **Live LLM/embeddings**: set `ANTHROPIC_API_KEY` (+ `VOYAGE_API_KEY`) or `GEMINI_API_KEY` to switch
-  the injectable providers from stub → real. You can specify the active provider using `LLM_PROVIDER` (e.g. `gemini` or `anthropic`) and `EMBEDDINGS_PROVIDER` (e.g. `gemini` or `voyage`) in `.env`. All service logic is unit-tested.
+## Live AI provider (B1, 2026-07-06) — ✅ active
+
+`backend/.env` (local, gitignored) is configured with `GEMINI_API_KEY`,
+`LLM_PROVIDER=gemini`, `EMBEDDINGS_PROVIDER=gemini`. On startup `get_llm()`
+returns `GeminiLLM` (model: `gemini-2.0-flash`) and `get_embeddings()` returns
+`GeminiEmbeddings` (model: `text-embedding-004`). All AI endpoints
+(`/ai/classify-batch`, `/resume/parse`, `/qa/answer`, `/cover-letter/generate`,
+etc.) now call real Gemini instead of the deterministic fake.
+
+To switch providers: update `LLM_PROVIDER` / `EMBEDDINGS_PROVIDER` in `.env`
+and restart the server. See `backend/.env.example` for all options.
+
+## Requires keys / infra to go live (remaining)
+- **Auth0, real job-board APIs (LinkedIn/Indeed)**: plug concrete `JobProvider`
 - **Persistence**: profile store (`backend/app/services/db.py`) is SQLite by
   default (zero-infra — `DATABASE_URL=sqlite:///./data/app.db`). RAG's
   `VectorStore` gains the same SQLAlchemy backing as an opt-in (construct with
