@@ -37,11 +37,16 @@ re-add finished phase/milestone work here.
 | T11 | **Options profile import/export**: JSON export/import of the local profile (privacy story: user owns their data; also enables backup/migration). | — | done (PR #16, 2026-07-05) | Local-only; no server involvement. Export downloads a JSON file client-side; import re-runs the existing `migrateProfile` schema backfill so older exports still work. |
 | T12 | **Firefox (MV3) feasibility spike**: assess manifest + `chrome.*`→`browser.*` gaps; document findings in docs/, no port unless trivial. | — | done (PR #17, 2026-07-05) | Timebox; outcome is a doc, not necessarily code. Findings: no pervasive `chrome.*` incompatibility (code is already promise-style); the real blocker is `chrome.sidePanel` (no Firefox equivalent — `sidebar_action` is a different API/UX). See `docs/FIREFOX_FEASIBILITY.md`. Recommendation: port later, not now. |
 
+## P3 — live AI (unblocked)
+
+| ID | Task | Depends on | Status | Notes |
+|----|------|-----------|--------|-------|
+| B1 | **Live LLM/embeddings**: activate real Gemini provider by setting `GEMINI_API_KEY`, `LLM_PROVIDER=gemini`, `EMBEDDINGS_PROVIDER=gemini` in `backend/.env`. | T1 | done (PR #19, 2026-07-06) | `GEMINI_API_KEY` configured; `GeminiLLM` + `GeminiEmbeddings` verified live. `backend/.env.example` updated to recommend Gemini as default provider. Key is local/gitignored — never committed. |
+
 ## Blocked — needs credentials / human decisions (do not attempt)
 
 | ID | Task | Blocker |
 |----|------|---------|
-| B1 | Live LLM/embeddings (swap fakes → real providers) | `ANTHROPIC_API_KEY` / `VOYAGE_API_KEY` from user |
 | B2 | Auth0 integration | Auth0 tenant + credentials |
 | B3 | Real job-board providers (LinkedIn/Indeed) behind `JobProvider` | Partner API credentials |
 | B4 | Chrome Web Store publication | Developer account, listing assets sign-off |

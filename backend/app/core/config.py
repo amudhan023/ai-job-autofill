@@ -22,7 +22,7 @@ class Settings(BaseSettings):
 
     # Default Gemini model used for all tasks when Gemini is the active provider.
     gemini_model: str = "gemini-2.0-flash"
-    gemini_embedding_model: str = "text-embedding-004"
+    gemini_embedding_model: str = "models/gemini-embedding-001"
 
     llm_provider: str = ""
     embeddings_provider: str = ""
