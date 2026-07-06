@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     # Default Gemini model used for all tasks when Gemini is the active provider.
     gemini_model: str = "gemini-2.0-flash"
+    gemini_embedding_model: str = "text-embedding-004"
+
+    llm_provider: str = ""
+    embeddings_provider: str = ""
 
     # Deterministic fake-AI mode for integration tests / local dev without keys.
     use_fake_ai: bool = False
