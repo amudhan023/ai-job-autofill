@@ -53,6 +53,19 @@ string actually written: `boolToYesNo`, `toFullName`, `toPreferredName`,
 `rules/transforms.ts`). This is where e.g. a boolean `usAuthorized` becomes
 the literal string `"Yes"`/`"No"` a `<select>` option expects.
 
+## Multilingual aliases (ES/DE/FR)
+
+Most rules also carry Spanish, German, and French label aliases (T10),
+marked `// ES/DE/FR aliases (T10)` inline in the source — e.g. `firstName`
+matches "Nombre", "Vorname", "Prénom" — so the same deterministic engine
+covers non-English application forms with zero AI involvement. These are
+pattern entries only: no new rule ids, structures, or matching logic.
+Coverage focuses on the common application core (name, contact, location,
+links, work authorization, education); US-specific rules (`usAuthorized`,
+`clearance`) deliberately have no aliases. Accented characters count as
+word boundaries in JS regexes, which several alias patterns anchor around
+(e.g. French bare "Nom" vs "Prénom").
+
 ## Deliberate absences
 
 SSN/EIN, DOB, driver's license, and criminal history have **no rule at all**

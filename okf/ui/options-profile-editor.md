@@ -7,7 +7,7 @@ tags: [ui, options, profile-editor, settings, core-ui]
 
 # Options Page — Profile Editor
 
-Source: `extension/src/options/Options.tsx` (~660 lines),
+Source: `extension/src/options/Options.tsx` (~890 lines),
 `extension/src/options/Onboarding.tsx`, `extension/src/options/Field.tsx`,
 `extension/src/options/Dashboard.tsx`.
 
@@ -33,6 +33,12 @@ options entry in `chrome://extensions`.
   `http://localhost:8000`) and the `autofillOnNavigation` toggle that gates
   [fill-sessions](../core/fill-sessions.md)'s automatic multi-page
   continuation.
+- **JSON import/export** (T11) — `exportProfileJson` downloads the whole
+  `UserProfile` as pretty-printed JSON for backup or moving browsers;
+  `importProfileJson` parses a previously exported file, validates it, and
+  backfills fields missing from older exports (`storage/profile.ts`).
+  Import **replaces** the entire saved profile, so it sits behind an
+  explicit confirm dialog.
 - **Onboarding** (`Onboarding.tsx`) — first-run flow guiding a new user
   through populating the profile before their first fill attempt.
 
