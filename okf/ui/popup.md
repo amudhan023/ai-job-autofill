@@ -29,6 +29,15 @@ left unset (see [manifest](../architecture/manifest.md)).
   active.
 - Surfaces an "AI draft" action per unmatched free-text field, sending
   `{ type: "AI_DRAFT_FIELD", fieldId }` (see [ai-pipeline](../core/ai-pipeline.md)).
+- For a field matched by the `coverLetter` rule, swaps that generic action
+  for an inline "Generate cover letter" form (`CoverLetterButton`, T7):
+  company name (pre-filled from the tab URL via `companyFromUrl`) plus a
+  tone select (formal / startup / creative), sent as
+  `{ type: "AI_DRAFT_COVER_LETTER", fieldId, company, style }` — the
+  dedicated backend cover-letter endpoint needs inputs the generic draft
+  button can't supply. The result is written into the field for review,
+  never submitted. A cover-letter *upload* (file input) match gets no draft
+  action at all — text can't go into a file control.
 
 ## Truthful "Filled X of Y" summary
 

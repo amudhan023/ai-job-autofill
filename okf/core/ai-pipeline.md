@@ -65,9 +65,21 @@ free and work offline once cached. Empty/stub answers are never cached
 (`putCachedAnswer` early-returns on blank `answer`), so a temporarily
 misconfigured backend can't poison the cache with placeholder text.
 
-## Provider chain (backend side)
+## Provider selection (backend side)
 
-Behind an `LLM` protocol: Anthropic (primary) → Gemini (fallback) →
-deterministic fakes (used in tests / when no API keys are configured), so
-the extension's UI code never needs to know which provider actually served a
-given request.
+Services depend on the `LLM` / `Embeddings` protocols
+(`backend/app/services/llm.py`), never on a vendor SDK directly. Which
+implementation serves a request is a backend setting (T-B1 / PRs #18–#19):
+
+- `llm_provider` explicitly selects `anthropic` or `gemini`; when unset (or
+  the chosen provider's API key is missing) the factory auto-detects by
+  available key, preferring Anthropic over Gemini.
+- `embeddings_provider` explicitly selects `voyage` or `gemini` (Gemini
+  embeddings via `gemini-embedding-001`); same auto-detect fallback,
+  preferring Voyage over Gemini.
+- With no keys at all — or with `use_fake_ai` set — deterministic fakes
+  serve instead, so tests and keyless dev boots still work.
+
+Callers pass Claude model IDs throughout; `GeminiLLM` deliberately ignores
+that argument and always uses the configured `gemini_model`. The extension's
+UI code never needs to know which provider actually served a given request.
