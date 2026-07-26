@@ -92,6 +92,28 @@ describe("rule engine — basic fills", () => {
     expect(m.flags).toContain("ai_generate");
     expect(m.value).toBeNull();
   });
+
+  it("flags an unmatched free-text textarea as AI-eligible instead of dead-ending", () => {
+    const p = emptyProfile();
+    const m = evaluateField(
+      field({
+        label: "Can you share an example of a time when you built a strong relationship?",
+        type: "textarea",
+      }),
+      p,
+    );
+    expect(m.ruleId).toBeNull();
+    expect(m.flags).toContain("ai_generate");
+    expect(m.value).toBeNull();
+  });
+
+  it("leaves an unmatched non-textarea field with no ai_generate flag", () => {
+    const p = emptyProfile();
+    const m = evaluateField(field({ label: "Some unrecognized select", type: "select" }), p);
+    expect(m.ruleId).toBeNull();
+    expect(m.flags).not.toContain("ai_generate");
+    expect(m.reason).toBe("No matching rule — needs attention.");
+  });
 });
 
 describe("rule engine — full name fields", () => {

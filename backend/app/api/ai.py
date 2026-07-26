@@ -14,7 +14,13 @@ from app.services.cover_letter import (
 )
 from app.services.jd import JDExtract, extract_jd
 from app.services.llm import get_embeddings, get_llm
-from app.services.rag import VectorStore, chunk_resume
+from app.services.rag import (
+    DEFAULT_USER_ID,
+    VectorStore,
+    chunk_resume,
+    replace_documents,
+    search_persisted,
+)
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -37,6 +43,14 @@ class ClassifyBatchRequest(BaseModel):
 
 class ClassifyBatchResponse(BaseModel):
     categories: list[str]
+
+
+class DocumentsRequest(BaseModel):
+    text: str
+
+
+class DocumentsResponse(BaseModel):
+    chunks: list[str]
 
 
 @router.post("/classify", response_model=ClassifyResponse)
@@ -67,11 +81,31 @@ async def answer(req: AnswerRequest) -> AnswerResponse:
     # Build an ephemeral RAG store from the supplied experience when embeddings
     # are available; otherwise generation proceeds without retrieval.
     store: VectorStore | None = None
+    doc_chunks: list[str] = []
     embeddings = get_embeddings()
-    if embeddings is not None and req.experience:
-        store = VectorStore(embeddings=embeddings)
-        store.add(chunk_resume(req.experience))
-    return generate(req, llm=get_llm(), store=store)
+    if embeddings is not None:
+        if req.experience:
+            store = VectorStore(embeddings=embeddings)
+            store.add(chunk_resume(req.experience))
+        doc_chunks = [t for t, _ in search_persisted(DEFAULT_USER_ID, embeddings, req.question)]
+    return generate(req, llm=get_llm(), store=store, doc_chunks=doc_chunks)
+
+
+@router.get("/documents", response_model=DocumentsResponse)
+async def get_documents() -> DocumentsResponse:
+    from app.services.db import get_rag_chunk_store
+
+    texts, _ = get_rag_chunk_store().load(DEFAULT_USER_ID)
+    return DocumentsResponse(chunks=texts)
+
+
+@router.put("/documents", response_model=DocumentsResponse)
+async def put_documents(req: DocumentsRequest) -> DocumentsResponse:
+    embeddings = get_embeddings()
+    if embeddings is None:
+        return DocumentsResponse(chunks=[])
+    chunks = replace_documents(DEFAULT_USER_ID, embeddings, req.text)
+    return DocumentsResponse(chunks=chunks)
 
 
 @router.post("/cover-letter", response_model=CoverLetterResponse)

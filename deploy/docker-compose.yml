@@ -1,0 +1,41 @@
+# Ubuntu deployment: Postgres+pgvector + the FastAPI backend, so the extension
+# (running on a different machine) can point its Backend URL setting at this
+# host and get real persisted-corpus RAG search (see docs/BACKLOG.md T13).
+#
+#   cp deploy/.env.example deploy/.env   # fill in GEMINI_API_KEY
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#   curl http://localhost:8000/health
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jobfill
+      POSTGRES_PASSWORD: jobfill
+      POSTGRES_DB: jobfill
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobfill"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://jobfill:jobfill@db:5432/jobfill
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

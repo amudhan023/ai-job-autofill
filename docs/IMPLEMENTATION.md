@@ -165,6 +165,47 @@ persists it via the existing `useProfileStore`. Covered by
 invalid-input errors) and new cases in `extension/src/options/Options.test.tsx`
 (export triggers a download, import persists/rejects/cancels).
 
+### RAG-backed answers for unmatched free-text questions (T13, 2026-07-25)
+
+Free-text `textarea` fields that don't match any of the 5 predefined
+AI-eligible rules (`coverLetter`, `whyCompany`, `aboutYou`, `behavioral`,
+`describeExperience`) previously dead-ended with "no matching rule — needs
+attention" and got no AI treatment at all. `extension/src/rules/engine.ts`'s
+unmatched branch now flags any unmatched `textarea` as `ai_generate` too, so
+the existing "AI Draft" button path (`AI_DRAFT_FIELD` → `REQUEST_AI_ANSWER` →
+`/ai/answer`) becomes available — no new UI, no auto-submit.
+
+Separately, the RAG retrieval corpus is no longer only the ephemeral,
+per-request resume chunks: a user-curated knowledge base can now be pasted
+into a new "Knowledge base" textarea on the Options page
+(`extension/src/options/KnowledgeBase.tsx`), backed by a persisted corpus on
+the backend:
+
+- `backend/app/services/db.py`: `RagChunkRecord.vector` now uses a
+  `PortableVector(TypeDecorator)` — a real `pgvector.sqlalchemy.Vector` column
+  on Postgres (lazy-imported), the same `struct.pack`/`unpack` blob encoding
+  as before on SQLite (no behavior change for the SQLite dev default).
+  `RagChunkStore` gained `replace()` (atomic whole-corpus overwrite) and
+  `search()` (real SQL `cosine_distance` ORDER BY/LIMIT on Postgres; falls
+  back to the existing Python `cosine()` loop on SQLite).
+- `backend/app/services/rag.py`: `search_persisted()`/`replace_documents()`
+  wrap the above for a fixed `DEFAULT_USER_ID = "local"` (single fixed
+  identity — no multi-user auth, matching this being a personal, local-first
+  tool).
+- `backend/app/api/ai.py`: `GET`/`PUT /ai/documents` read/replace the
+  persisted corpus; `/ai/answer` merges persisted-corpus chunks with the
+  ephemeral resume chunks before generation (`answers.generate()`'s new
+  `doc_chunks` param).
+- `extension/src/api/client.ts`: `BackendClient.getDocuments()`/
+  `saveDocuments()`.
+- Ubuntu deployment: `deploy/docker-compose.yml` (`pgvector/pgvector:pg16` +
+  the existing `backend/Dockerfile`) + `deploy/README.md` — the Mac-side
+  extension points its existing Settings → Backend URL at that host.
+
+The real Postgres SQL search path (`cosine_distance`) isn't exercised in CI
+(no Postgres service there) — same lazy, untested-until-configured posture
+the live AI provider code already has (B1).
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |
@@ -185,7 +226,7 @@ See [`TESTING.md`](./TESTING.md) for the full strategy and commands.
 | Resume parse (text extract → Claude → profile) | ✅ | `backend/app/services/resume.py` |
 | JD extraction + skill gap | ✅ | `backend/app/services/jd.py` |
 | Question classifier (LLM + keyword fallback) | ✅ | `backend/app/services/classifier.py` |
-| RAG (chunk + cosine; in-memory by default, optional SQLite persistence) | ✅ | `backend/app/services/rag.py`, `db.py` |
+| RAG (ephemeral resume chunks + persisted knowledge-base corpus; real pgvector SQL search when `DATABASE_URL` is Postgres, T13) | ✅ | `backend/app/services/rag.py`, `db.py` |
 | STAR answer generation | ✅ | `backend/app/services/answers.py` |
 | Extension backend client + AI proxy + JD scraper | ✅ | `extension/src/api/`, `content/jdScraper.ts` |
 

@@ -12,9 +12,14 @@ given.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 
 from app.services.llm import Embeddings
+
+# Single fixed identity — this is a personal, local-first tool with no
+# multi-user auth (see docs/BACKLOG.md B2).
+DEFAULT_USER_ID = "local"
 
 
 def chunk_resume(profile_experience: list[dict]) -> list[str]:
@@ -77,3 +82,30 @@ class VectorStore:
 
     def __len__(self) -> int:
         return len(self._texts)
+
+
+def chunk_text(text: str) -> list[str]:
+    """Split freeform pasted text into chunks on blank lines."""
+    return [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+
+
+def search_persisted(
+    user_id: str, embeddings: Embeddings, query: str, k: int = 3
+) -> list[tuple[str, float]]:
+    """Retrieve the top-k persisted knowledge-base chunks for a query."""
+    from app.services.db import get_rag_chunk_store
+
+    qvec = embeddings.embed([query])[0]
+    return get_rag_chunk_store().search(user_id, qvec, k)
+
+
+def replace_documents(user_id: str, embeddings: Embeddings, text: str) -> list[str]:
+    """Re-chunk and re-embed the whole knowledge-base corpus, replacing what
+    was stored for user_id (matches the options-page 'paste/edit the whole
+    corpus' UX, not incremental add)."""
+    from app.services.db import get_rag_chunk_store
+
+    chunks = chunk_text(text)
+    vecs = embeddings.embed(chunks) if chunks else []
+    get_rag_chunk_store().replace(user_id, chunks, vecs)
+    return chunks

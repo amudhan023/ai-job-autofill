@@ -147,6 +147,9 @@ export function evaluateField(field: DiscoveredField, profile: UserProfile): Fie
 
   const found = findRule(field);
   if (!found) {
+    // Free-text with no rule match is still AI-eligible — reuses the same
+    // ai_generate flag/AI-draft path as the predefined free-text rules below.
+    const isFreeText = field.type === "textarea";
     return {
       fieldId: field.fieldId,
       label: field.label,
@@ -156,8 +159,10 @@ export function evaluateField(field: DiscoveredField, profile: UserProfile): Fie
       value: null,
       confidence: 0,
       tier: "low",
-      flags: [],
-      reason: "No matching rule — needs attention.",
+      flags: isFreeText ? ["ai_generate"] : [],
+      reason: isFreeText
+        ? "Free-text — no rule matched; AI generation available."
+        : "No matching rule — needs attention.",
     };
   }
 

@@ -71,6 +71,47 @@ def test_rag_chunk_store_scoped_by_user(engine) -> None:
     assert texts == ["mine"]
 
 
+def test_rag_chunk_store_replace_overwrites_corpus(engine) -> None:
+    store = RagChunkStore(engine)
+    store.save("u1", ["old chunk"], [[1.0, 0.0]])
+
+    store.replace("u1", ["new one", "new two"], [[0.0, 1.0], [1.0, 1.0]])
+
+    texts, vecs = store.load("u1")
+    assert texts == ["new one", "new two"]
+    assert vecs == [[0.0, 1.0], [1.0, 1.0]]
+
+
+def test_rag_chunk_store_replace_is_scoped_by_user(engine) -> None:
+    store = RagChunkStore(engine)
+    store.save("u1", ["mine"], [[1.0]])
+    store.save("u2", ["theirs"], [[2.0]])
+
+    store.replace("u1", ["mine v2"], [[3.0]])
+
+    texts, _ = store.load("u2")
+    assert texts == ["theirs"]
+
+
+def test_rag_chunk_store_search_ranks_by_cosine_similarity(engine) -> None:
+    """SQLite fallback path (no pgvector server) — the `<=>` SQL branch in
+    RagChunkStore.search only runs against a real Postgres/pgvector dialect
+    and isn't exercised here or in CI."""
+    store = RagChunkStore(engine)
+    store.save(
+        "u1",
+        ["about kafka", "about gardening"],
+        [[1.0, 0.0], [0.0, 1.0]],
+    )
+
+    results = store.search("u1", [1.0, 0.0], k=1)
+    assert results[0][0] == "about kafka"
+
+
+def test_rag_chunk_store_search_empty_corpus_returns_empty(engine) -> None:
+    assert RagChunkStore(engine).search("nobody", [1.0, 0.0]) == []
+
+
 # ---- VectorStore's opt-in persistence (via the app-wide db singleton) ----- #
 
 
