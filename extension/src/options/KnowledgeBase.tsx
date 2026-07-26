@@ -19,9 +19,7 @@ function connectionErrorMessage(e: unknown, action: string): string {
  */
 export function KnowledgeBase() {
   const [text, setText] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "saving" | "done" | "error">(
-    "loading",
-  );
+  const [status, setStatus] = useState<"idle" | "loading" | "saving" | "done" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
