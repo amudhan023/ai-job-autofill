@@ -45,6 +45,7 @@ def generate(
     req: AnswerRequest,
     llm: LLM | None = None,
     store: VectorStore | None = None,
+    doc_chunks: list[str] | None = None,
 ) -> AnswerResponse:
     client = llm
     if client is None:
@@ -70,6 +71,7 @@ def generate(
     chunks: list[str] = []
     if store is not None and len(store) > 0:
         chunks = [t for t, _ in store.retrieve(req.question, k=3)]
+    chunks = chunks + (doc_chunks or [])
 
     answer = client.complete(
         system=ANSWER_SYSTEM,

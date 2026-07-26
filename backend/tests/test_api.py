@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
+import app.core.config as config_module
 from app.main import app
+from app.services.fakes import FakeEmbeddings
+from app.services.rag import DEFAULT_USER_ID, replace_documents
 
 client = TestClient(app)
 
@@ -64,3 +67,40 @@ def test_ai_jd_stub_returns_empty_extract() -> None:
     res = client.post("/ai/jd", json={"jd_text": "We need a Staff Engineer..."})
     assert res.status_code == 200
     assert res.json()["requiredSkills"] == []
+
+
+def test_get_documents_without_embeddings_configured_is_empty() -> None:
+    res = client.get("/ai/documents")
+    assert res.status_code == 200
+    assert res.json()["chunks"] == []
+
+
+def test_put_documents_without_embeddings_configured_is_noop() -> None:
+    res = client.put("/ai/documents", json={"text": "some bio text"})
+    assert res.status_code == 200
+    assert res.json()["chunks"] == []
+
+
+def test_put_then_get_documents_roundtrips_in_fake_ai_mode(monkeypatch) -> None:
+    monkeypatch.setattr(config_module.settings, "use_fake_ai", True)
+
+    put = client.put("/ai/documents", json={"text": "I led a Kafka migration\n\nI enjoy hiking"})
+    assert put.status_code == 200
+    assert put.json()["chunks"] == ["I led a Kafka migration", "I enjoy hiking"]
+
+    got = client.get("/ai/documents")
+    assert got.json()["chunks"] == ["I led a Kafka migration", "I enjoy hiking"]
+
+
+def test_ai_answer_uses_persisted_knowledge_base_chunks(monkeypatch) -> None:
+    monkeypatch.setattr(config_module.settings, "use_fake_ai", True)
+    replace_documents(DEFAULT_USER_ID, FakeEmbeddings(), "I mentor new engineers on the team")
+
+    res = client.post(
+        "/ai/answer",
+        json={"question": "I mentor new engineers on the team", "jd_summary": ""},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["stubbed"] is False
+    assert "I mentor new engineers on the team" in body["retrieved"]

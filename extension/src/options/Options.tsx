@@ -10,6 +10,7 @@ import {
   saveBackendUrl,
 } from "@/storage/settings";
 import { BackendClient, checkBackendHealth } from "@/api/client";
+import { KnowledgeBase } from "./KnowledgeBase";
 import { saveResumeFile } from "@/storage/resumeFile";
 import { exportProfileJson, importProfileJson } from "@/storage/profile";
 import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
@@ -97,6 +98,8 @@ export function Options() {
               void persist();
             }}
           />
+
+          <KnowledgeBase />
 
           <Section title="Personal">
             <TextField

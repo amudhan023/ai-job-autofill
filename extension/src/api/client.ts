@@ -118,6 +118,24 @@ export class BackendClient {
   coverLetter(req: CoverLetterRequest): Promise<CoverLetterResponse> {
     return this.post("/ai/cover-letter", req);
   }
+
+  /** Loads the user's persisted knowledge-base corpus (options page). */
+  getDocuments(): Promise<DocumentsResponse> {
+    return this.request<DocumentsResponse>("/ai/documents", { method: "GET" });
+  }
+
+  /** Replaces the whole knowledge-base corpus; the backend re-chunks on blank lines. */
+  saveDocuments(text: string): Promise<DocumentsResponse> {
+    return this.request<DocumentsResponse>("/ai/documents", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+  }
+}
+
+export interface DocumentsResponse {
+  chunks: string[];
 }
 
 export interface CoverLetterRequest {

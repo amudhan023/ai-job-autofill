@@ -39,9 +39,14 @@ class Settings(BaseSettings):
     embedding_model: str = "voyage-3.5-lite"
 
     # Zero-infra default: a local SQLite file. Postgres/pgvector is opt-in —
-    # point this at a postgresql:// URL (and install a Postgres driver).
+    # point this at a postgresql+psycopg:// URL (and install a Postgres driver).
     database_url: str = "sqlite:///./data/app.db"
     redis_url: str = "redis://localhost:6379/0"
+
+    # pgvector column width — must match the active embeddings provider's
+    # output dimension. Changing provider/model later requires dropping and
+    # recreating the rag_chunks table.
+    embedding_dim: int = 3072
 
     @property
     def ai_enabled(self) -> bool:

@@ -8,7 +8,14 @@ from app.services.answers import AnswerRequest, generate
 from app.services.classifier import classify_keyword, classify_question, is_ai_category
 from app.services.fakes import FakeEmbeddings, FakeLLM
 from app.services.jd import JDExtract, extract_jd_text, skill_gap
-from app.services.rag import VectorStore, chunk_resume, cosine
+from app.services.rag import (
+    VectorStore,
+    chunk_resume,
+    chunk_text,
+    cosine,
+    replace_documents,
+    search_persisted,
+)
 from app.services.resume import parse_resume_text
 
 # ---- classifier ----------------------------------------------------------- #
@@ -154,6 +161,34 @@ def test_classify_batch_endpoint() -> None:
     assert cats[0] == "VISA_WORK_AUTH"
     assert cats[1] == "MOTIVATION"
     assert cats[2] == "SALARY"
+
+
+# ---- persisted knowledge-base corpus (search_persisted / replace_documents) #
+
+
+def test_chunk_text_splits_on_blank_lines() -> None:
+    assert chunk_text("first para\n\nsecond para\n\n\nthird") == [
+        "first para",
+        "second para",
+        "third",
+    ]
+
+
+def test_replace_documents_then_search_persisted_finds_relevant_chunk() -> None:
+    embeddings = FakeEmbeddings()
+    replace_documents("kb-test-1", embeddings, "I led a Kafka migration\n\nI enjoy gardening")
+
+    results = search_persisted("kb-test-1", embeddings, "I led a Kafka migration", k=1)
+    assert results[0][0] == "I led a Kafka migration"
+
+
+def test_replace_documents_overwrites_previous_corpus() -> None:
+    embeddings = FakeEmbeddings()
+    replace_documents("kb-test-2", embeddings, "old fact")
+    replace_documents("kb-test-2", embeddings, "new fact")
+
+    results = search_persisted("kb-test-2", embeddings, "fact", k=5)
+    assert [t for t, _ in results] == ["new fact"]
 
 
 def test_classify_batch_caps_input() -> None:
