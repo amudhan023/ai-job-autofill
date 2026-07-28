@@ -16,6 +16,11 @@ curl http://localhost:8000/health   # {"status":"ok","ai_enabled":true}
 Then, in the extension's Settings, set Backend URL to
 `http://<ubuntu-host>:8000` and click "Test connection".
 
+If port 8000 is already taken on the host, set `BACKEND_PORT` in `.env` to an
+open port (e.g. `8001`) before `docker compose up` — the container still
+listens on 8000 internally, only the published host port changes. Update the
+extension's Backend URL to match.
+
 ## Optional: ANN index
 
 At small corpus sizes (a personal knowledge base — dozens to low hundreds of

@@ -206,6 +206,10 @@ The real Postgres SQL search path (`cosine_distance`) isn't exercised in CI
 (no Postgres service there) — same lazy, untested-until-configured posture
 the live AI provider code already has (B1).
 
+`deploy/docker-compose.yml` publishes the backend on host port `${BACKEND_PORT:-8000}`
+(container port stays 8000) — set `BACKEND_PORT` in `deploy/.env` if 8000 is
+already taken on the deployment host.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |
@@ -280,8 +284,10 @@ application at `AWAIT_USER_REVIEW`; only explicit user approval reaches
 
 `backend/.env` (local, gitignored) is configured with `GEMINI_API_KEY`,
 `LLM_PROVIDER=gemini`, `EMBEDDINGS_PROVIDER=gemini`. On startup `get_llm()`
-returns `GeminiLLM` (model: `gemini-2.0-flash`) and `get_embeddings()` returns
-`GeminiEmbeddings` (model: `text-embedding-004`). All AI endpoints
+returns `GeminiLLM` (model: `gemini-2.0-flash`, via `GEMINI_MODEL`) and
+`get_embeddings()` returns `GeminiEmbeddings` (model:
+`models/gemini-embedding-001`, via `GEMINI_EMBEDDING_MODEL`, 3072-dim — must
+match `EMBEDDING_DIM`). All AI endpoints
 (`/ai/classify-batch`, `/resume/parse`, `/qa/answer`, `/cover-letter/generate`,
 etc.) now call real Gemini instead of the deterministic fake.
 
