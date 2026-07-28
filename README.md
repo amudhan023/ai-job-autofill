@@ -26,8 +26,9 @@ ai-job-autofill/
 │       ├── popup/      # popup UI (trigger fill, per-field status)
 │       ├── options/    # options page (profile editor, settings)
 │       └── storage/    # chrome.storage + IndexedDB helpers
-└── backend/       # FastAPI services (profile, resume parse, AI orchestration)
-    └── app/
+├── backend/       # FastAPI services (profile, resume parse, AI orchestration)
+│   └── app/
+└── deploy/        # Postgres+pgvector + backend stack for real RAG SQL search
 ```
 
 ## Quick start — extension
@@ -59,6 +60,11 @@ cp .env.example .env     # add ANTHROPIC_API_KEY etc.
 uvicorn app.main:app --reload
 ```
 
+Defaults to a zero-infra local SQLite file. For real Postgres+pgvector SQL
+similarity search over the Options-page knowledge base, run
+[`deploy/`](./deploy/README.md) instead (`docker compose up`) and point the
+extension's Settings → Backend URL at it.
+
 ## Status
 
 Phases 1–5 (rule engine, ATS adapters, AI answers, cover letters, analytics,
@@ -81,6 +87,10 @@ extension now works on *any* site with a form:
 - **M6 — files & data-driven platforms:** resume auto-attach to upload
   fields; ATS adapters are data entries (`PLATFORM_HINTS`), extendable via
   remote config without a release.
+
+Post-launch: a persisted, user-curated **knowledge base** (Options page) now
+backs RAG-generated answers for any unmatched free-text question, not just
+resume-derived ones — see `docs/BACKLOG.md` T13.
 
 Architecture review, gap analysis, and design decisions:
 [`docs/ARCHITECTURE_REVIEW.md`](./docs/ARCHITECTURE_REVIEW.md). Progress log:

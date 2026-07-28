@@ -66,10 +66,16 @@ submits** them.
                               │  classify, jd-extract,  │
                               │  answer (RAG + STAR),   │
                               │  cover-letter           │
+                              │ /ai/documents: persisted│
+                              │  knowledge-base corpus  │
                               │ /resume/parse (PDF/DOCX)│
-                              │ LLM: Anthropic primary, │
-                              │  Gemini fallback, fakes │
-                              │ Voyage embeddings + RAG │
+                              │ LLM: Gemini (active) or │
+                              │  Anthropic, or fakes    │
+                              │ Embeddings + RAG: SQLite│
+                              │  dev default, Postgres/ │
+                              │  pgvector opt-in        │
+                              │  (deploy/, real SQL     │
+                              │  cosine search)         │
                               └─────────────────────────┘
 ```
 
@@ -184,14 +190,23 @@ full-name compose, list join).
   advisory `aiCategory` badge — AI assigns no values, so it cannot write.
 - **Free-text drafts**: per-field "AI draft" button → scrape the visible job
   description → `/ai/answer` (keyword classifier routes; RAG over the user's
-  experience chunks; STAR format for behavioral; ≤200 words; "use ONLY the
-  provided experiences"). Draft is written into the form for review.
+  resume chunks plus a persisted, user-curated knowledge-base corpus; STAR
+  format for behavioral; ≤200 words; "use ONLY the provided experiences").
+  Draft is written into the form for review. Any unmatched free-text
+  `textarea` (not just the 5 predefined AI-eligible fields) is now eligible
+  for a draft, so the RAG path isn't limited to a fixed question set.
+- **Knowledge base**: an Options-page textarea (`KnowledgeBase.tsx`) lets the
+  user paste answers/experience once; `GET`/`PUT /ai/documents` persist it
+  server-side, embedded and searched alongside the ephemeral resume chunks.
+  SQLite (dev default) does a linear-scan Python cosine search; Postgres
+  (`deploy/`, opt-in via `DATABASE_URL`) runs real SQL `cosine_distance`
+  similarity search via pgvector — same store interface either way.
 - **Answer cache**: 30-day, 100-entry local cache keyed on normalized
   question text — repeat questions across applications are free and offline.
 - **Cover letters**: profile summary + JD summary + style (formal/startup/
   creative).
-- Provider chain behind an `LLM` Protocol: Anthropic (primary) → Gemini
-  (fallback) → deterministic fakes (tests/no keys). Embeddings: Voyage.
+- Provider chain behind an `LLM` Protocol: Gemini (active) or Anthropic →
+  deterministic fakes (tests/no keys). Embeddings: Gemini (active) or Voyage.
 
 ### 3.7 UI truthfulness
 
@@ -233,7 +248,12 @@ extension/src/
 backend/app/
 ├── api/         /ai, /resume, /profile, /jobs routers
 └── services/    llm providers, classifier, answers (RAG+STAR), cover_letter,
-                 rag, resume parser, orchestration (human-gated state machine)
+                 rag + db (SQLite dev default / Postgres+pgvector opt-in),
+                 resume parser, orchestration (human-gated state machine)
+
+deploy/          docker-compose.yml + README — Postgres+pgvector + backend
+                 stack for real SQL RAG search (BACKEND_PORT overrides the
+                 published host port if 8000 is taken)
 
 docs/            ARCHITECTURE_REVIEW.md (design + gap analysis + milestones),
                  IMPLEMENTATION.md (per-milestone status), GUIDE.md (user guide),
