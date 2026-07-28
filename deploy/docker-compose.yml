@@ -32,7 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://jobfill:jobfill@db:5432/jobfill
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
