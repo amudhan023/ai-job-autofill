@@ -227,7 +227,11 @@ function formatValue(raw: unknown, rule: FieldRule): string | null {
 function isCompatibleType(actual: FieldType, expected: FieldType): boolean {
   const textish: FieldType[] = ["text", "email", "tel", "url", "number"];
   if (textish.includes(actual) && textish.includes(expected)) return true;
-  if (expected === "radio" && (actual === "select" || actual === "radio")) return true;
+  // A single-checkbox "group" is how Yes/No toggles are discovered when an
+  // ATS renders them as one checkbox relay (Ashby-style button toggles) —
+  // functionally a two-option radio, so don't penalize radio-typed rules.
+  if (expected === "radio" && (actual === "select" || actual === "radio" || actual === "checkbox"))
+    return true;
   // A select-like control (incl. ARIA comboboxes) can take any short value by
   // picking the matching option — don't penalize text-expecting rules on it.
   if (actual === "select" && textish.includes(expected)) return true;

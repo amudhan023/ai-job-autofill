@@ -294,6 +294,31 @@ etc.) now call real Gemini instead of the deterministic fake.
 To switch providers: update `LLM_PROVIDER` / `EMBEDDINGS_PROVIDER` in `.env`
 and restart the server. See `backend/.env.example` for all options.
 
+## Ashby button-driven Yes/No toggles (2026-08-09) — ✅ fixed
+
+Live-site debugging on `jobs.ashbyhq.com` (Headway application form) found
+work-authorization/visa-sponsorship questions silently unfilled. Root cause:
+Ashby renders these as two plain `<button>` elements ("Yes"/"No") next to a
+`display:none` checkbox that only mirrors state — clicking a button is what
+actually drives React state; setting `.checked` + dispatching `input`/`change`
+on the hidden input does nothing (verified live: button never gets the
+`_active_` class).
+
+Two-part fix, both root-caused to the shared layer so every caller benefits:
+- `adapters/discover.ts` `isFillable()`: a hidden radio/checkbox is still
+  discoverable when it has sibling `<button>` elements (the toggle relay
+  pattern), not just when it's a file input.
+- `adapters/domFill.ts` `setRadioOrCheckbox()`: tries clicking a sibling
+  `<button>` whose text matches the desired value before falling back to the
+  native `.checked` path.
+- `rules/engine.ts` `isCompatibleType()`: a single-checkbox "group" (how this
+  pattern gets discovered) no longer loses confidence against `radio`-typed
+  rules — it was scoring 0.6 (below the 0.7 auto-fill floor) even after
+  discovery/write were fixed.
+
+Regression coverage: `adapters/domFill.test.ts`, `adapters/discover.test.ts`,
+`rules/engine.test.ts`.
+
 ## Requires keys / infra to go live (remaining)
 - **Auth0, real job-board APIs (LinkedIn/Indeed)**: plug concrete `JobProvider`
 - **Persistence**: profile store (`backend/app/services/db.py`) is SQLite by

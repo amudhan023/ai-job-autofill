@@ -86,6 +86,23 @@ describe("rule engine — basic fills", () => {
     expect(m.value).toBe("Yes");
   });
 
+  it("keeps auto-fill confidence for work-auth Yes/No rendered as a single checkbox relay (Ashby toggle widgets)", () => {
+    // Some ATS forms render a Yes/No question as one checkbox (discovery
+    // groups it as type "checkbox") instead of a two-option radio group.
+    // Type mismatch must not tank confidence below the auto-fill floor.
+    const p = emptyProfile();
+    p.workAuth.usAuthorized = true;
+    const m = evaluateField(
+      field({
+        label: "Are you authorized to work in the United States for any employer?",
+        type: "checkbox",
+      }),
+      p,
+    );
+    expect(m.value).toBe("Yes");
+    expect(m.confidence).toBeGreaterThanOrEqual(0.7);
+  });
+
   it("flags cover letter as AI-generate, not deterministic fill", () => {
     const p = emptyProfile();
     const m = evaluateField(field({ label: "Cover Letter", type: "textarea" }), p);

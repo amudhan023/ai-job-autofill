@@ -261,6 +261,20 @@ export function setFileValue(input: HTMLInputElement, file: File): boolean {
 }
 
 export function setRadioOrCheckbox(group: HTMLInputElement[], desiredLabel: string): boolean {
+  // Button-driven toggle (Ashby-style Yes/No widgets): the input is a
+  // display:none relay next to plain-text <button> options that own the
+  // actual click handling — setting .checked directly never reaches React's
+  // state (verified on jobs.ashbyhq.com), so click the matching button.
+  const wanted = desiredLabel.trim().toLowerCase();
+  for (const input of group) {
+    const buttons = Array.from(input.parentElement?.querySelectorAll("button") ?? []);
+    const match = buttons.find((b) => (b.textContent ?? "").trim().toLowerCase() === wanted);
+    if (match) {
+      clickSequence(match);
+      return true;
+    }
+  }
+
   // Standard path: find the option whose label text includes the desired value.
   const target = group.find((input) => {
     const label = labelForControl(input).toLowerCase();
