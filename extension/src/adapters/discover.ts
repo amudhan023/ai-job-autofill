@@ -188,7 +188,13 @@ function isFillable(el: HTMLElement): boolean {
   if (style.display === "none" || style.visibility === "hidden") {
     // Exception: file inputs are routinely visually hidden behind styled
     // dropzones/buttons but still writable — keep them.
-    return isTag(el, "INPUT") && (el as HTMLInputElement).type === "file";
+    if (isTag(el, "INPUT") && (el as HTMLInputElement).type === "file") return true;
+    // Exception: Ashby-style Yes/No toggles render a hidden radio/checkbox
+    // "relay" next to plain-text <button> options that carry the actual
+    // click handling — the input is still the right element to group/label,
+    // it's just written by clicking its sibling button (see setRadioOrCheckbox).
+    if (isRadioOrCheckbox(el) && el.parentElement?.querySelector("button")) return true;
+    return false;
   }
   return true;
 }

@@ -135,6 +135,26 @@ describe("setRadioOrCheckbox", () => {
     setRadioOrCheckbox(group, "Yes");
     expect(changed).toBe(true);
   });
+
+  it("clicks the matching sibling button on Ashby-style hidden-relay toggles", () => {
+    // Ashby renders Yes/No as two <button> options next to a display:none
+    // checkbox that only mirrors state — real ATS markup, minus styling.
+    document.body.innerHTML = `
+      <div class="_container_">
+        <button>Yes</button>
+        <button>No</button>
+        <input type="checkbox" style="display:none" name="q1">
+      </div>`;
+    const group = Array.from(document.querySelectorAll<HTMLInputElement>("input[name='q1']"));
+    const yesBtn = document.querySelectorAll("button")[0];
+    const clicked = vi.fn();
+    yesBtn.addEventListener("click", clicked);
+
+    expect(setRadioOrCheckbox(group, "Yes")).toBe(true);
+    expect(clicked).toHaveBeenCalledOnce();
+    // The relay checkbox itself is left alone — React drives it, not us.
+    expect(group[0].checked).toBe(false);
+  });
 });
 
 describe("labelForControl", () => {

@@ -36,6 +36,26 @@ describe("discoverWithin", () => {
     expect(types).toContain("text");
   });
 
+  it("discovers a display:none checkbox relay when it has sibling <button> options (Ashby toggles)", () => {
+    document.body.innerHTML = `
+      <form>
+        <label>Are you authorized to work in the US?</label>
+        <div class="_container_">
+          <button>Yes</button>
+          <button>No</button>
+          <input type="checkbox" style="display:none" name="q1" />
+        </div>
+      </form>`;
+    const handles = discoverWithin(document.querySelector("form")!);
+    expect(handles).toHaveLength(1);
+    expect(handles[0].discovered.type).toBe("checkbox");
+  });
+
+  it("still excludes a display:none checkbox with no sibling buttons", () => {
+    document.body.innerHTML = `<form><input type="checkbox" style="display:none" name="q2" /></form>`;
+    expect(discoverWithin(document.querySelector("form")!)).toHaveLength(0);
+  });
+
   it("excludes disabled controls", () => {
     document.body.innerHTML = `<form><input aria-label="Off" disabled /></form>`;
     expect(discoverWithin(document.querySelector("form")!)).toHaveLength(0);
