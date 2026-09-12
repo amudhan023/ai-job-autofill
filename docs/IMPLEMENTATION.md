@@ -371,6 +371,45 @@ etc.) now call real Gemini instead of the deterministic fake.
 To switch providers: update `LLM_PROVIDER` / `EMBEDDINGS_PROVIDER` in `.env`
 and restart the server. See `backend/.env.example` for all options.
 
+## Greenhouse screening-question rules (2026-09-11) — ✅ added
+
+Taken from a live Greenhouse posting (Omada Health, job `8055515`). Six of its
+questions matched no rule. They are a shape the taxonomy didn't cover: the
+question states its own bar in the label, so the answer lives half in the
+profile and half in the question text.
+
+- `FieldRule.transform` now receives the discovered label as a second argument
+  (`(value, label) => string`). Backward-compatible — the eight existing
+  transforms ignore it.
+- New rules in `rules/fieldRules.ts`:
+  - `residesInUS` — "Do you currently live in the United States?" from
+    `personal.location.country` (`countryToUsResidency`). Auto-fills.
+  - `yearsExpThreshold` — "Do you have 5+ years of ... experience?" reads the
+    threshold out of the label and compares it to `meta.totalYearsExp`
+    (`yearsMeetsThreshold`). Auto-fills. Listed **before** `yearsExp`: both
+    match "at least 3 years of experience", and `yearsExp` would write the raw
+    number into a Yes/No dropdown.
+  - `skillGate` — "Do you have hands-on experience with Terraform, Pulumi, or
+    CDK?" answers from `skills.technical` vs. the technologies named in the
+    question (`skillsMatchLabel`). Word-boundary matching with regex escaping,
+    so `Go` doesn't hit "good" and `C++`/`.NET` still match. One overlap ⇒
+    "Yes". **`confirm`-flagged** — a heuristic about the user's own
+    qualifications, so the popup surfaces it and the executor never writes it.
+    Listed **last** so it loses every same-signal tie to a specific rule.
+  - `transgender` — new `demographics.transgender` field + Options select,
+    `confirm`-flagged like the other EEO rules.
+- Every new transform returns `""` (⇒ `null` ⇒ no fill) when the profile side
+  is missing, rather than guessing. This matters most for `yearsExpThreshold`:
+  `totalYearsExp` defaults to `0` and `hasValue(0)` is `true`, so without the
+  guard an unset profile would answer "No" to every gate. Likewise `skillGate`
+  never volunteers a "No" — zero overlap means *unknown*, since the question
+  may name a technology the user simply never listed.
+- Veteran status and disability on the same page stay hard-blocked by
+  `BLOCKLIST_PATTERNS` — unchanged, and pinned by a test.
+
+Coverage: `rules/engine.omada.test.ts` (the real question set),
+`rules/transforms.test.ts`.
+
 ## Requires keys / infra to go live (remaining)
 - **Auth0, real job-board APIs (LinkedIn/Indeed)**: plug concrete `JobProvider`
 - **Persistence**: profile store (`backend/app/services/db.py`) is SQLite by

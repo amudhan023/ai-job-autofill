@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { boolToYesNo, toFullName, toCityState } from "./transforms";
+import { boolToYesNo, toFullName, toCityState, skillsMatchLabel } from "./transforms";
 
 describe("boolToYesNo", () => {
   it("returns Yes for truthy values", () => {
@@ -71,5 +71,35 @@ describe("dialCodeToCountry", () => {
     expect(dialCodeToCountry("+999")).toBe("+999");
     expect(dialCodeToCountry("")).toBe("");
     expect(dialCodeToCountry(null)).toBe("");
+  });
+});
+
+describe("skillsMatchLabel", () => {
+  const iac =
+    "Do you have hands-on experience with infrastructure-as-code tools, such as Terraform, Pulumi, CloudFormation, or CDK?";
+
+  it("says Yes on a single named-technology overlap", () => {
+    expect(skillsMatchLabel(["Python", "Terraform"], iac)).toBe("Yes");
+  });
+
+  it("returns unknown rather than No when nothing overlaps", () => {
+    expect(skillsMatchLabel(["Figma", "Photoshop"], iac)).toBe("");
+    expect(skillsMatchLabel([], iac)).toBe("");
+    expect(skillsMatchLabel(["Terraform"], "")).toBe("");
+    expect(skillsMatchLabel("Terraform", iac)).toBe("");
+  });
+
+  it("respects word boundaries", () => {
+    // "Go" must not match "good"/"going".
+    expect(skillsMatchLabel(["Go"], "Have you used good tooling for going fast?")).toBe("");
+    expect(skillsMatchLabel(["Go"], "Have you written Go in production?")).toBe("Yes");
+    // Single letters are dropped before matching.
+    expect(skillsMatchLabel(["R"], iac)).toBe("");
+  });
+
+  it("matches skills whose names contain regex metacharacters", () => {
+    expect(skillsMatchLabel(["C++"], "Do you have experience with C++ or Rust?")).toBe("Yes");
+    expect(skillsMatchLabel([".NET"], "Have you built with .NET before?")).toBe("Yes");
+    expect(skillsMatchLabel(["Node.js"], "Do you have experience with Nodexjs?")).toBe("");
   });
 });

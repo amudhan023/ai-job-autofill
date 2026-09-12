@@ -116,6 +116,7 @@ export interface Demographics {
   gender: string;
   pronouns: string;
   lgbtqia: string;
+  transgender: string;
 }
 
 /**
@@ -176,7 +177,14 @@ export function emptyProfile(): UserProfile {
       willingToTravel: false,
     },
     references: [],
-    demographics: { ageRange: "", raceEthnicity: [], gender: "", pronouns: "", lgbtqia: "" },
+    demographics: {
+      ageRange: "",
+      raceEthnicity: [],
+      gender: "",
+      pronouns: "",
+      lgbtqia: "",
+      transgender: "",
+    },
     customAnswers: [],
     meta: { totalYearsExp: 0 },
   };
