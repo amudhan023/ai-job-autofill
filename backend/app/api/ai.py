@@ -12,6 +12,7 @@ from app.services.cover_letter import (
     CoverLetterResponse,
     generate_cover_letter,
 )
+from app.services.field_fill import FillRequest, FillResponse, suggest_fills
 from app.services.jd import JDExtract, extract_jd
 from app.services.llm import get_embeddings, get_llm
 from app.services.rag import (
@@ -111,3 +112,14 @@ async def put_documents(req: DocumentsRequest) -> DocumentsResponse:
 @router.post("/cover-letter", response_model=CoverLetterResponse)
 async def cover_letter(req: CoverLetterRequest) -> CoverLetterResponse:
     return generate_cover_letter(req, get_llm())
+
+
+@router.post("/fill", response_model=FillResponse)
+async def fill(req: FillRequest) -> FillResponse:
+    """Propose values for fields the extension's rule engine left unanswered.
+
+    Advisory by design: the extension decides what to write, and identity /
+    work-auth / demographic / salary questions are stripped server-side before
+    the model ever sees them (see services/field_fill.py).
+    """
+    return suggest_fills(req, get_llm())

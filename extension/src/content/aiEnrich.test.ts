@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { installChromeMock } from "@/test/chromeMock";
-import { applyCategories, enrichWithAI, selectUnmatched } from "./aiEnrich";
+import { aiFillUnmatched, applyCategories, enrichWithAI, selectUnmatched } from "./aiEnrich";
+import { detectAndFill } from "./fillExecutor";
+import { emptyProfile } from "@/shared/profile";
+import type { FillFieldSpec } from "@/api/client";
 import type { FieldMatch } from "@/shared/types";
 
 function match(partial: Partial<FieldMatch>): FieldMatch {
@@ -83,5 +86,84 @@ describe("enrichWithAI", () => {
     const mock = chrome.runtime.sendMessage as ReturnType<typeof vi.fn>;
     await enrichWithAI([match({ label: "Email", ruleId: "email" })]);
     expect(mock).not.toHaveBeenCalled();
+  });
+});
+
+describe("aiFillUnmatched", () => {
+  beforeEach(() => {
+    installChromeMock();
+  });
+
+  /** A form whose two questions no deterministic rule can answer. */
+  async function unmatchedForm(): Promise<FieldMatch[]> {
+    document.body.innerHTML = `
+      <form id="application_form" class="greenhouse-application">
+        <label for="q1">Which shift pattern would you prefer to work?</label>
+        <select id="q1">
+          <option>Select an option</option>
+          <option>Mornings</option>
+          <option>Evenings</option>
+        </select>
+        <label for="q2">What interests you most about this team?</label>
+        <textarea id="q2" maxlength="500"></textarea>
+      </form>`;
+    const result = await detectAndFill(emptyProfile(), { settleMs: 0 });
+    return result.matches;
+  }
+
+  it("sends the page's own option list and writes the answers back", async () => {
+    const matches = await unmatchedForm();
+    const mock = chrome.runtime.sendMessage as ReturnType<typeof vi.fn>;
+    let sent: { fields: FillFieldSpec[] } | undefined;
+    mock.mockImplementation(async (msg: { fields: FillFieldSpec[] }) => {
+      sent = msg;
+      return {
+        ok: true,
+        suggestions: msg.fields.map((f) => ({
+          field_id: f.field_id,
+          value: f.options ? f.options[1] : "Because the team ships fast.",
+          confidence: 0.9,
+          category: "BEHAVIORAL",
+        })),
+      };
+    });
+
+    const written = await aiFillUnmatched(matches, "Backend engineer");
+
+    const select = sent?.fields.find((f) => f.type === "select");
+    expect(select?.options).toEqual(["Mornings", "Evenings"]); // placeholder dropped
+    const essay = sent?.fields.find((f) => f.type === "textarea");
+    expect(essay?.max_length).toBe(500);
+
+    expect(written).toBe(2);
+    expect((document.getElementById("q1") as HTMLSelectElement).value).toBe("Evenings");
+    expect((document.getElementById("q2") as HTMLTextAreaElement).value).toBe(
+      "Because the team ships fast.",
+    );
+    expect(matches.find((m) => m.fieldId === essay?.field_id)?.filled).toBe(true);
+  });
+
+  it("ignores suggestions below the auto-fill floor", async () => {
+    const matches = await unmatchedForm();
+    const mock = chrome.runtime.sendMessage as ReturnType<typeof vi.fn>;
+    mock.mockImplementation(async (msg: { fields: FillFieldSpec[] }) => ({
+      ok: true,
+      suggestions: msg.fields.map((f) => ({
+        field_id: f.field_id,
+        value: "Mornings",
+        confidence: 0.4,
+        category: "BEHAVIORAL",
+      })),
+    }));
+
+    expect(await aiFillUnmatched(matches)).toBe(0);
+    expect((document.getElementById("q2") as HTMLTextAreaElement).value).toBe("");
+  });
+
+  it("leaves the page untouched when the backend is unreachable", async () => {
+    const matches = await unmatchedForm();
+    const mock = chrome.runtime.sendMessage as ReturnType<typeof vi.fn>;
+    mock.mockRejectedValueOnce(new Error("no backend"));
+    expect(await aiFillUnmatched(matches)).toBe(0);
   });
 });

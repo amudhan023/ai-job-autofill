@@ -1,6 +1,8 @@
 import type { UserProfile } from "@/shared/profile";
 import type { FieldMatch, FillResult } from "@/shared/types";
+import type { DiscoveredField } from "@/rules/engine";
 import { evaluateField } from "@/rules/engine";
+import { FIELD_RULES } from "@/rules/fieldRules";
 import { detectATS } from "@/adapters/registry";
 import type { ATSAdapter, FieldHandle } from "@/adapters/types";
 import {
@@ -34,13 +36,23 @@ export function getLastHandle(fieldId: string): FieldHandle | undefined {
 }
 
 /**
- * Write a user-approved value (e.g. an AI draft) into a field from the last
- * fill pass. Same writers, same zero-mutation guarantee; bypasses the
- * never-clobber guard because the user explicitly asked for this write.
+ * Write a value produced outside the rule engine (an AI draft, an AI fill
+ * suggestion) into a field from the last fill pass. Same writers, same
+ * zero-mutation guarantee.
+ *
+ * `skipIfFilled` picks which of the two callers you are. A popup button the
+ * user just clicked is an explicit instruction, so it overwrites (default).
+ * An automatic AI pass was never asked for field-by-field, so it must keep
+ * the never-clobber guarantee — it passes `skipIfFilled: true`.
  */
-export async function writeValueToField(fieldId: string, value: string): Promise<boolean> {
+export async function writeValueToField(
+  fieldId: string,
+  value: string,
+  opts: { skipIfFilled?: boolean } = {},
+): Promise<boolean> {
   const handle = lastHandles.get(fieldId);
   if (!handle || !value) return false;
+  if (opts.skipIfFilled && hasExistingValue(handle)) return false;
   return writeField(handle, value);
 }
 
@@ -188,6 +200,10 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
   // file-name mirror — the bytes ARE the profile value for this field
   // (a missing upload still means no fill, preserving the no-blank-fill rule).
   if (handle.discovered.type === "file") {
+    if (isDocumentRule(match.ruleId) && isAmbiguousDocumentField(handle.discovered)) {
+      match.reason = "Asks for more than one document — attach the file yourself.";
+      return false;
+    }
     if (match.ruleId === "resumeUpload") {
       return attachDocument(handle, match, loadResumeFile, "resume");
     }
@@ -205,6 +221,35 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
   match.filled = ok;
   if (!ok) match.reason = "Matched with a value, but the control didn't accept the write.";
   return ok;
+}
+
+/** Patterns of the two document-upload rules, resolved once at module load. */
+const DOC_PATTERNS: Record<string, RegExp[]> = {
+  resumeUpload: FIELD_RULES.find((r) => r.id === "resumeUpload")?.patterns ?? [],
+  coverLetterUpload: FIELD_RULES.find((r) => r.id === "coverLetterUpload")?.patterns ?? [],
+};
+
+function isDocumentRule(ruleId: string | null | undefined): boolean {
+  return !!ruleId && ruleId in DOC_PATTERNS;
+}
+
+/**
+ * True when a single file input asks for more than one document
+ * ("Resume and Cover Letter", "Upload CV / cover letter").
+ *
+ * Both document rules match such a field on the same signal with the same
+ * score, so `stronger()` falls through to FIELD_RULES declaration order and
+ * the resume silently wins. Attaching the wrong file is worse than attaching
+ * nothing: the user sees a green badge and never notices. Skip instead.
+ */
+function isAmbiguousDocumentField(field: DiscoveredField): boolean {
+  const text = [field.label, field.placeholder, field.ariaLabel, field.nameAttr, field.idAttr]
+    .filter(Boolean)
+    .join(" ");
+  return (
+    DOC_PATTERNS.resumeUpload.some((p) => p.test(text)) &&
+    DOC_PATTERNS.coverLetterUpload.some((p) => p.test(text))
+  );
 }
 
 /** Attach a locally stored document (resume, cover letter) to a file input. */

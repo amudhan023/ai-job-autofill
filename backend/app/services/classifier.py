@@ -79,3 +79,17 @@ def classify_question(question: str, llm: LLM | None = None) -> str:
 def is_ai_category(category: str) -> bool:
     """Categories that warrant AI free-text generation (never the sensitive ones)."""
     return category in {"BEHAVIORAL", "MOTIVATION", "COVER_LETTER"}
+
+
+# Categories the LLM must never answer. This is the server-side enforcement of
+# the project's inviolable rule "no LLM on structured fields": identity, legal
+# work-authorization, and protected-characteristic answers come from the user's
+# stored profile via the deterministic rule engine, or not at all. SALARY is
+# here too — a compensation number is the user's negotiating position, not
+# something a model should invent on their behalf.
+LLM_FILL_DENYLIST = {"PERSONAL", "VISA_WORK_AUTH", "DIVERSITY", "SALARY"}
+
+
+def is_llm_fillable(category: str) -> bool:
+    """True when the LLM may propose a value for a question of this category."""
+    return category not in LLM_FILL_DENYLIST

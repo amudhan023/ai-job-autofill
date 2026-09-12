@@ -19,6 +19,18 @@ class LLM(Protocol):
     def complete(self, *, system: str, user: str, model: str, max_tokens: int = 1024) -> str: ...
 
 
+class ToolLLM(Protocol):
+    """Providers that can return structured output via native tool use.
+
+    Optional: `call_tool()` below falls back to prompt-and-parse JSON for
+    providers that don't implement this.
+    """
+
+    def use_tool(
+        self, *, system: str, user: str, tool: dict, model: str, max_tokens: int = 2048
+    ) -> dict: ...
+
+
 class Embeddings(Protocol):
     def embed(self, texts: list[str]) -> list[list[float]]: ...
 
@@ -51,6 +63,29 @@ class AnthropicLLM:
         # Concatenate text blocks.
         parts = [getattr(b, "text", "") for b in msg.content]
         return "".join(parts)
+
+    def use_tool(
+        self, *, system: str, user: str, tool: dict, model: str, max_tokens: int = 2048
+    ) -> dict:
+        """Force a single tool call and return its parsed input.
+
+        `tool_choice` pins the response to this one tool, so the model cannot
+        answer in prose — the SDK hands back `block.input` already parsed,
+        which is why nothing here does string matching on the reply.
+        """
+        client = self._ensure()
+        msg = client.messages.create(  # type: ignore[attr-defined]
+            model=model,
+            max_tokens=max_tokens,
+            system=system,
+            tools=[tool],
+            tool_choice={"type": "tool", "name": tool["name"]},
+            messages=[{"role": "user", "content": user}],
+        )
+        for block in msg.content:
+            if getattr(block, "type", "") == "tool_use":
+                return dict(block.input)
+        return {}
 
 
 class GeminiLLM:
@@ -179,6 +214,40 @@ def get_embeddings() -> Embeddings | None:
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
+
+def call_tool(
+    llm: LLM,
+    *,
+    system: str,
+    user: str,
+    tool: dict,
+    model: str,
+    max_tokens: int = 2048,
+) -> dict:
+    """Structured output from any provider, as the tool's input dict.
+
+    Anthropic gets real tool use (schema enforced server-side). Anything else
+    — Gemini, the test fakes — is asked for the same schema as JSON text and
+    parsed. Returns {} when the model answered with something unparseable;
+    callers treat that as "no suggestions", never as an error.
+    """
+    use_tool = getattr(llm, "use_tool", None)
+    if callable(use_tool):
+        return use_tool(system=system, user=user, tool=tool, model=model, max_tokens=max_tokens)
+
+    schema = json.dumps(tool["input_schema"])
+    try:
+        return extract_json(
+            llm.complete(
+                system=f"{system}\n\nReply with ONLY a JSON object matching this schema:\n{schema}",
+                user=user,
+                model=model,
+                max_tokens=max_tokens,
+            )
+        )
+    except (ValueError, TypeError):
+        return {}
 
 
 def extract_json(text: str) -> dict:

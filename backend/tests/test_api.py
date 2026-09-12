@@ -18,7 +18,7 @@ def test_health_reports_models_and_ai_disabled_by_default() -> None:
     body = res.json()
     assert body["status"] == "ok"
     # Corrected model IDs from the plan changelog.
-    assert body["models"]["cover_letter"] == "claude-opus-4-8"
+    assert body["models"]["cover_letter"] == "claude-opus-5"
     assert body["models"]["embedding"] == "voyage-3.5-lite"
     # No key configured in test env → AI stubbed.
     assert body["ai_enabled"] is False
@@ -60,7 +60,7 @@ def test_ai_answer_stub_flags_stubbed() -> None:
     assert res.status_code == 200
     body = res.json()
     assert body["stubbed"] is True
-    assert body["model"] == "claude-sonnet-4-6"
+    assert body["model"] == "claude-sonnet-5"
 
 
 def test_ai_jd_stub_returns_empty_extract() -> None:

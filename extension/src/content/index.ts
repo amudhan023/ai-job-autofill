@@ -13,7 +13,7 @@ import { loadProfile } from "@/storage/profile";
 import { loadAutofillOnNavigation } from "@/storage/settings";
 import { detectAndFill, detectOnly, getLastHandle, writeValueToField } from "./fillExecutor";
 import { canAutoFill, loadSession, recordFill, summarize } from "./fillSession";
-import { enrichWithAI } from "./aiEnrich";
+import { aiFillUnmatched, enrichWithAI } from "./aiEnrich";
 import { scrapeJobDescription } from "./jdScraper";
 import { applyRemoteHints } from "@/adapters/platforms";
 import { loadAdapterConfig } from "@/adapters/remoteConfig";
@@ -59,6 +59,8 @@ async function runFill(opts: { auto: boolean }) {
   const result = await detectAndFill(profile);
   // Classify leftover unknowns in one batched AI call (advisory badges only).
   await enrichWithAI(result.matches);
+  // Then ask Claude to actually answer the ones the rule engine could not.
+  result.filledCount += await aiFillUnmatched(result.matches, scrapeJobDescription());
   await recordFill(result.filledCount, { auto: opts.auto });
   // Report back to the background worker for history persistence.
   void chrome.runtime.sendMessage({ type: "FILL_DONE", result }).catch(() => {});

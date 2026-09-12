@@ -30,12 +30,15 @@ class Settings(BaseSettings):
     # Deterministic fake-AI mode for integration tests / local dev without keys.
     use_fake_ai: bool = False
 
-    # Model IDs — defaults match PLAN.md §3 (corrected: opus-4-8, voyage embeddings).
-    resume_model: str = "claude-sonnet-4-6"
+    # Model IDs. Never date-suffixed — these are the current aliases.
+    resume_model: str = "claude-sonnet-5"
     jd_model: str = "claude-haiku-4-5"
-    qa_model: str = "claude-sonnet-4-6"
-    cover_letter_model: str = "claude-opus-4-8"
+    qa_model: str = "claude-sonnet-5"
+    cover_letter_model: str = "claude-opus-5"
     classifier_model: str = "claude-haiku-4-5"
+    # Filling unmatched form fields: needs tool use + careful "omit if unsure"
+    # judgment, so not haiku; sonnet is accurate enough and far cheaper than opus.
+    fill_model: str = "claude-sonnet-5"
     embedding_model: str = "voyage-3.5-lite"
 
     # Zero-infra default: a local SQLite file. Postgres/pgvector is opt-in —

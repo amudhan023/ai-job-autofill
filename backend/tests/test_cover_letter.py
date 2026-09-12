@@ -43,4 +43,4 @@ def test_endpoint_stubs_without_key() -> None:
     assert res.status_code == 200
     body = res.json()
     assert body["stubbed"] is True
-    assert body["model"] == "claude-opus-4-8"
+    assert body["model"] == "claude-opus-5"

@@ -244,6 +244,49 @@ the popup, one per dropdown, each a stray-write risk.
 Tests: `rules/customAnswers.test.ts` (9), plus an `aria-hidden` case in
 `adapters/discover.test.ts`.
 
+### Claude fills the leftover unmatched fields (2026-09-12)
+
+Custom answers (above) cover questions the user has seen before. Everything
+else on a new posting — "What interests you about this team?", "How many years
+with Kubernetes?", "When could you start?" — still ended a fill pass unwritten,
+badged with an advisory AI category and nothing more.
+
+`POST /ai/fill` closes that gap. The extension sends the fields the rule engine
+left unanswered (id, label, control type, the page's own option list, maxlength)
+plus a profile summary and the scraped JD; Claude answers through a **forced
+tool call** (`fill_fields`, `strict: true`, `tool_choice` pinned to that tool),
+so the reply is a schema-validated object, never prose to be parsed.
+`services/llm.py::call_tool` gives the same shape to providers without native
+tool use (Gemini, the test fakes) by asking for the schema as JSON text.
+
+Three gates, all server-side except the last:
+
+1. **Category denylist** (`classifier.is_llm_fillable`) drops `PERSONAL`,
+   `VISA_WORK_AUTH`, `DIVERSITY` and `SALARY` *before the prompt is built* —
+   those questions never reach the model at all. This is the server-side
+   enforcement of "no LLM on structured fields": identity and work-authorization
+   answers come from the deterministic engine or not at all, and a compensation
+   number is the user's negotiating position, not a model's guess.
+2. **Echo check** — a `field_id` the extension did not send is discarded.
+3. **Closed set** — for a select or radio group the value must equal one of the
+   options actually on the page (case-insensitive, snapped back to the page's
+   exact text); over-length answers are dropped.
+
+In the extension, `aiFillUnmatched` (`content/aiEnrich.ts`) writes only
+suggestions at ≥ 0.7 confidence — the same `AUTOFILL_FLOOR` the rule engine
+uses — and passes `skipIfFilled: true` to `writeValueToField`, so the automatic
+pass keeps the never-clobber guarantee that the popup's explicit "AI draft"
+button deliberately bypasses. A missing key, a timeout, or an unparseable reply
+leaves the deterministic result exactly as it was.
+
+Anthropic is now the documented default provider (`LLM_PROVIDER=anthropic` in
+`.env.example`) and the stale date-suffixed model IDs were refreshed to the
+current aliases (`claude-sonnet-5`, `claude-haiku-4-5`, `claude-opus-5`).
+`FILL_MODEL` defaults to `claude-sonnet-5`.
+
+Tests: `backend/tests/test_field_fill.py` (7), plus three `aiFillUnmatched`
+cases in `extension/src/content/aiEnrich.test.ts`.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

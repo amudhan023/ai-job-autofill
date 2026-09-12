@@ -7,6 +7,8 @@ exercised deterministically without network or keys.
 from __future__ import annotations
 
 import hashlib
+import json
+import re
 
 
 class FakeLLM:
@@ -64,6 +66,14 @@ class ServerFakeLLM:
             return self.JD_JSON
         if "classifier" in s or "respond with exactly one of" in s:
             return ""  # let the keyword classifier decide
+        if "job application on behalf" in s:
+            # /ai/fill has no native tool use here, so it asks for the tool's
+            # schema as JSON. Echo back every field id it listed, so the
+            # integration E2E exercises the real write path end to end.
+            ids = re.findall(r"^- id: (.+)$", user, re.M)
+            return json.dumps(
+                {"fills": [{"field_id": i, "value": self.PROSE, "confidence": 0.8} for i in ids]}
+            )
         return self.PROSE
 
 

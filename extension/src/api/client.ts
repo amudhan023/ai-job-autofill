@@ -115,6 +115,15 @@ export class BackendClient {
     return this.post("/ai/answer", req);
   }
 
+  /**
+   * Ask Claude for values for the fields the rule engine could not match.
+   * One request answers the whole page, which is why the model's reply is a
+   * forced tool call (schema-checked) rather than prose to be parsed.
+   */
+  suggestFills(req: FillSuggestRequest): Promise<FillSuggestResponse> {
+    return this.post("/ai/fill", req);
+  }
+
   coverLetter(req: CoverLetterRequest): Promise<CoverLetterResponse> {
     return this.post("/ai/cover-letter", req);
   }
@@ -132,6 +141,36 @@ export class BackendClient {
       body: JSON.stringify({ text }),
     });
   }
+}
+
+/** One unanswered control, described for the backend's /ai/fill endpoint. */
+export interface FillFieldSpec {
+  field_id: string;
+  label: string;
+  type: string;
+  /** Allowed choices for select/radio/checkbox; omitted for free text. */
+  options?: string[];
+  max_length?: number | null;
+}
+
+export interface FillSuggestRequest {
+  fields: FillFieldSpec[];
+  profile_summary: string;
+  jd_summary?: string;
+}
+
+export interface FillSuggestion {
+  field_id: string;
+  value: string;
+  confidence: number;
+  category: string;
+}
+
+export interface FillSuggestResponse {
+  suggestions: FillSuggestion[];
+  model: string;
+  /** True when the backend has no LLM key configured. */
+  stubbed: boolean;
 }
 
 export interface DocumentsResponse {

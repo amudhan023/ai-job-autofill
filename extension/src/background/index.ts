@@ -7,7 +7,13 @@ import type { FillResult } from "@/shared/types";
 import { recordApplication } from "@/storage/history";
 import { loadProfile } from "@/storage/profile";
 import { getCachedAnswer, putCachedAnswer } from "@/storage/answerCache";
-import { getBackendClient, type AnswerResponse, type CoverLetterResponse } from "@/api/client";
+import {
+  getBackendClient,
+  type AnswerResponse,
+  type CoverLetterResponse,
+  type FillFieldSpec,
+  type FillSuggestResponse,
+} from "@/api/client";
 
 interface InternalMessage {
   type:
@@ -17,6 +23,7 @@ interface InternalMessage {
     | "REQUEST_AI_ANSWER"
     | "REQUEST_COVER_LETTER"
     | "REQUEST_CLASSIFY_BATCH"
+    | "REQUEST_AI_FILL"
     | "OPEN_DASHBOARD";
   result?: FillResult;
   url?: string;
@@ -27,6 +34,8 @@ interface InternalMessage {
   style?: "formal" | "startup" | "creative";
   /** REPORT_PAGE_STATUS: whether this tab has a supported ATS / fillable form. */
   hasForm?: boolean;
+  /** REQUEST_AI_FILL: the unmatched controls to ask Claude about. */
+  fields?: FillFieldSpec[];
 }
 
 const SIDE_PANEL_PATH = "src/sidepanel/index.html";
@@ -147,6 +156,19 @@ async function handle(
       if (!client) return { ok: false, error: "Could not read backend settings" };
       const res = await client.classifyBatch(message.questions ?? []);
       return { ok: true, categories: res.categories };
+    }
+    case "REQUEST_AI_FILL": {
+      const fields = message.fields ?? [];
+      if (fields.length === 0) return { ok: true, suggestions: [] };
+      const client = await getBackendClient();
+      if (!client) return { ok: false, error: "Could not read backend settings" };
+      const profile = await loadProfile();
+      const res: FillSuggestResponse = await client.suggestFills({
+        fields,
+        profile_summary: summarizeProfile(profile),
+        jd_summary: message.jdSummary ?? "",
+      });
+      return { ok: true, suggestions: res.suggestions, stubbed: res.stubbed };
     }
     case "REQUEST_COVER_LETTER": {
       const client = await getBackendClient();
