@@ -99,6 +99,8 @@ export interface ProfileMeta {
   totalYearsExp: number;
   /** Original resume file name, set after a successful parse. */
   resumeFileName?: string;
+  /** Uploaded cover letter file name, set when its bytes are stored. */
+  coverLetterFileName?: string;
 }
 
 /**
@@ -116,6 +118,20 @@ export interface Demographics {
   lgbtqia: string;
 }
 
+/**
+ * A user-authored answer for a question no built-in rule covers — e.g.
+ * match "8+ years of professional software engineering" → answer "Yes".
+ * The answer is matched against dropdown options the same way any other
+ * value is (exact → startsWith → includes), so "Yes" picks "Yes, I am a
+ * veteran". Still deterministic: the user wrote the answer, not an LLM.
+ */
+export interface CustomAnswer {
+  /** Text to look for in the question. */
+  match: string;
+  /** What to fill, or which option to pick. */
+  answer: string;
+}
+
 export interface UserProfile {
   personal: PersonalInfo;
   links: Links;
@@ -126,6 +142,8 @@ export interface UserProfile {
   preferences: Preferences;
   references: Reference[];
   demographics: Demographics;
+  /** User-written answers for questions the rule engine doesn't know. */
+  customAnswers: CustomAnswer[];
   meta: ProfileMeta;
 }
 
@@ -159,6 +177,7 @@ export function emptyProfile(): UserProfile {
     },
     references: [],
     demographics: { ageRange: "", raceEthnicity: [], gender: "", pronouns: "", lgbtqia: "" },
+    customAnswers: [],
     meta: { totalYearsExp: 0 },
   };
 }

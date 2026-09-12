@@ -143,3 +143,42 @@ describe("new taxonomy rules", () => {
     expect(m.value).toBe("TypeScript, Python");
   });
 });
+
+describe("multi-signal matching — type compatibility breaks score ties", () => {
+  // Live ClickUp/Ashby label: matches both /country/i (rule "country", type
+  // text) and /sponsor/i (rule "sponsorship", type radio) on the same signal,
+  // so both score identically and only the control type tells them apart.
+  const SPONSORSHIP_LABEL =
+    "Will you now or in the future need an employer to sponsor you for a " +
+    "work visa (e.g., H-1B, etc) in the country where you will be working?";
+
+  it("prefers the rule whose type fits the control over an equal-scoring one", () => {
+    const p = emptyProfile();
+    p.workAuth.sponsorshipNeeded = true;
+    p.personal.location.country = "United States";
+    const m = evaluateField(field({ label: SPONSORSHIP_LABEL, type: "radio" }), p);
+    expect(m.ruleId).toBe("sponsorship");
+    expect(m.value).toBe("Yes");
+    expect(m.tier).toBe("medium");
+  });
+
+  it("still picks the text rule when the control is a text input", () => {
+    const p = emptyProfile();
+    p.personal.location.country = "United States";
+    const m = evaluateField(field({ label: "Country of residence", type: "text" }), p);
+    expect(m.ruleId).toBe("country");
+    expect(m.value).toBe("United States");
+  });
+
+  it("does not let type compatibility override a stronger signal", () => {
+    const p = emptyProfile();
+    p.personal.location.country = "United States";
+    p.workAuth.sponsorshipNeeded = true;
+    // Label (0.85) names the country; only the weak attr signal says sponsor.
+    const m = evaluateField(
+      field({ label: "Country", nameAttr: "sponsor_country", type: "text" }),
+      p,
+    );
+    expect(m.ruleId).toBe("country");
+  });
+});

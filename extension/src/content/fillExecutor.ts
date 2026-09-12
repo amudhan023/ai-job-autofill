@@ -14,7 +14,7 @@ import {
   setRadioOrCheckbox,
   setSelectValue,
 } from "@/adapters/domFill";
-import { loadResumeFile } from "@/storage/resumeFile";
+import { loadCoverLetterFile, loadResumeFile } from "@/storage/resumeFile";
 
 /** Confidence floor below which we never auto-write (just badge it). */
 const AUTOFILL_FLOOR = 0.7;
@@ -184,11 +184,16 @@ function hasExistingValue(handle: FieldHandle): boolean {
 
 /** Top-level write decision for one evaluated field. */
 async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
-  // Resume attachment: gated on the stored file itself, not on the profile's
-  // resumeFileName mirror — the bytes ARE the profile value for this field
+  // Document attachment: gated on the stored file itself, not on the profile's
+  // file-name mirror — the bytes ARE the profile value for this field
   // (a missing upload still means no fill, preserving the no-blank-fill rule).
-  if (match.ruleId === "resumeUpload" && handle.discovered.type === "file") {
-    return attachResume(handle, match);
+  if (handle.discovered.type === "file") {
+    if (match.ruleId === "resumeUpload") {
+      return attachDocument(handle, match, loadResumeFile, "resume");
+    }
+    if (match.ruleId === "coverLetterUpload") {
+      return attachDocument(handle, match, loadCoverLetterFile, "cover letter");
+    }
   }
   if (!shouldWrite(match)) return false;
   if (hasExistingValue(handle)) {
@@ -202,20 +207,25 @@ async function writeMatch(handle: FieldHandle, match: FieldMatch): Promise<boole
   return ok;
 }
 
-/** Attach the locally stored resume to a Resume/CV file input. */
-async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boolean> {
+/** Attach a locally stored document (resume, cover letter) to a file input. */
+async function attachDocument(
+  handle: FieldHandle,
+  match: FieldMatch,
+  load: () => Promise<File | null>,
+  kind: string,
+): Promise<boolean> {
   if (hasExistingValue(handle)) {
     match.reason = "Already has a file attached — left untouched.";
     match.alreadyHadValue = true;
     return false;
   }
-  const file = await loadResumeFile();
+  const file = await load();
   if (!file) {
-    match.reason = "Resume field found — upload your resume in Options to auto-attach.";
+    match.reason = `${capitalize(kind)} field found — upload your ${kind} in Options to auto-attach.`;
     return false;
   }
   const ok = setFileValue(handle.element as HTMLInputElement, file);
-  match.reason = ok ? `Attached ${file.name}.` : "Could not attach the resume file.";
+  match.reason = ok ? `Attached ${file.name}.` : `Could not attach the ${kind} file.`;
   if (ok) {
     // Truthful popup summary: show the attached file with a green badge —
     // the engine-computed confidence was 0 whenever the profile mirror
@@ -226,6 +236,10 @@ async function attachResume(handle: FieldHandle, match: FieldMatch): Promise<boo
     match.filled = true;
   }
   return ok;
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /** Write a single resolved value to its control using type-appropriate logic. */

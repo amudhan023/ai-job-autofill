@@ -347,3 +347,91 @@ describe("detectAndFill — M6 resume attachment", () => {
     expect(resMatch.reason).toMatch(/upload your resume in options/i);
   });
 });
+
+describe("detectAndFill — cover letter attachment", () => {
+  it("attaches the stored cover letter to a Cover Letter file input", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+    const { saveCoverLetterFile } = await import("@/storage/resumeFile");
+    await saveCoverLetterFile(
+      new File(["fake letter bytes"], "cover.pdf", { type: "application/pdf" }),
+    );
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="fn">First Name</label><input id="fn" />
+        <label for="cl">Cover Letter</label><input id="cl" type="file" />
+      </form>`;
+    const p = emptyProfile();
+    p.personal.firstName = "Amudhan";
+
+    const result = await detectAndFill(p, NO_SETTLE);
+
+    const clMatch = result.matches.find((m) => m.label === "Cover Letter")!;
+    expect(clMatch.ruleId).toBe("coverLetterUpload");
+    const input = document.getElementById("cl") as HTMLInputElement;
+    if (typeof DataTransfer !== "undefined") {
+      expect(input.files?.length).toBe(1);
+      expect(input.files?.[0].name).toBe("cover.pdf");
+      expect(clMatch.reason).toMatch(/attached cover\.pdf/i);
+    } else {
+      expect(clMatch.reason).toMatch(/could not attach/i);
+    }
+  });
+
+  it("reports guidance when no cover letter is stored (never invents a file)", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="cl">Cover Letter</label><input id="cl" type="file" />
+      </form>`;
+
+    const result = await detectAndFill(emptyProfile(), NO_SETTLE);
+
+    const clMatch = result.matches.find((m) => m.label === "Cover Letter")!;
+    expect((document.getElementById("cl") as HTMLInputElement).files?.length ?? 0).toBe(0);
+    expect(clMatch.reason).toMatch(/upload your cover letter in options/i);
+  });
+
+  it("leaves a Cover Letter textarea to the AI rule, not the upload rule", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+    const { saveCoverLetterFile } = await import("@/storage/resumeFile");
+    await saveCoverLetterFile(new File(["bytes"], "cover.pdf", { type: "application/pdf" }));
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="cl">Cover Letter</label><textarea id="cl"></textarea>
+      </form>`;
+
+    const result = await detectAndFill(emptyProfile(), NO_SETTLE);
+
+    const clMatch = result.matches.find((m) => m.label === "Cover Letter")!;
+    expect(clMatch.ruleId).toBe("coverLetter");
+    expect(clMatch.flags).toContain("ai_generate");
+    expect((document.getElementById("cl") as HTMLTextAreaElement).value).toBe("");
+  });
+
+  it("keeps the resume rule on a resume file input when both files are stored", async () => {
+    const { installChromeMock } = await import("@/test/chromeMock");
+    installChromeMock();
+    const { saveResumeFile, saveCoverLetterFile } = await import("@/storage/resumeFile");
+    await saveResumeFile(new File(["r"], "resume.pdf", { type: "application/pdf" }));
+    await saveCoverLetterFile(new File(["c"], "cover.pdf", { type: "application/pdf" }));
+
+    document.body.innerHTML = `
+      <form id="application_form"><div id="field_order_1"></div>
+        <label for="res">Resume/CV</label><input id="res" type="file" />
+        <label for="cl">Cover Letter</label><input id="cl" type="file" />
+      </form>`;
+
+    const result = await detectAndFill(emptyProfile(), NO_SETTLE);
+
+    expect(result.matches.find((m) => m.label === "Resume/CV")!.ruleId).toBe("resumeUpload");
+    expect(result.matches.find((m) => m.label === "Cover Letter")!.ruleId).toBe(
+      "coverLetterUpload",
+    );
+  });
+});

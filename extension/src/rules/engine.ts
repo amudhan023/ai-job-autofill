@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/shared/profile";
+import type { CustomAnswer, UserProfile } from "@/shared/profile";
 import type { FieldMatch, FieldRule, FieldType, RuleFlag } from "@/shared/types";
 import { FIELD_RULES, isBlocked } from "./fieldRules";
 import { computeConfidence, labelMatchScore, toTier, type MatchSource } from "./confidence";
@@ -63,6 +63,38 @@ function autocompleteTokens(field: DiscoveredField): string[] {
     .filter((t) => t && t !== "on" && t !== "off" && !t.startsWith("section-"));
 }
 
+/** One rule's claim on a field, ranked by `beats()`. */
+interface RuleCandidate {
+  rule: FieldRule;
+  matchedOn: MatchSource;
+  exact: boolean;
+  /** Signal strength, 0-1 (see confidence.ts SOURCE_SCORES). */
+  score: number;
+  /** True when the rule's declared type can drive this control. */
+  typeMatch: boolean;
+}
+
+/**
+ * The stronger of two candidate rules for the same field (`best` is absent on
+ * the first match).
+ *
+ * Exact ties are common, not rare: two rules often match the same label on the
+ * same signal and so carry an identical score. The live ClickUp/Ashby question
+ * "...sponsor you for a work visa ... in the country where you will be
+ * working?" matches both /country/i and /sponsor/i on its label. Without a
+ * tie-break, declaration order in FIELD_RULES silently decides, and `country`
+ * (a text rule) wins a radio group it cannot fill.
+ */
+function stronger(best: RuleCandidate | null, candidate: RuleCandidate): RuleCandidate {
+  if (!best) return candidate;
+  // Signal strength stays the primary key: a type-compatible rule must never
+  // promote itself over a genuinely stronger match.
+  if (candidate.score !== best.score) return candidate.score > best.score ? candidate : best;
+  // Equal score: the rule whose declared type can actually drive the control
+  // wins. Still equal, the incumbent keeps it — preserving FIELD_RULES order.
+  return candidate.typeMatch && !best.typeMatch ? candidate : best;
+}
+
 /**
  * Score every rule against every signal and return the strongest match.
  * Rule-array order only breaks ties (more specific rules are listed first);
@@ -83,16 +115,24 @@ function findRule(field: DiscoveredField): {
   const signals = signalsFor(field);
   const acTokens = autocompleteTokens(field);
 
-  let best: { rule: FieldRule; matchedOn: MatchSource; exact: boolean; score: number } | null =
-    null;
+  const candidateFor = (
+    rule: FieldRule,
+    matchedOn: MatchSource,
+    exact: boolean,
+  ): RuleCandidate => ({
+    rule,
+    matchedOn,
+    exact,
+    score: labelMatchScore(matchedOn, exact),
+    typeMatch: field.type === rule.type || isCompatibleType(field.type, rule.type),
+  });
+
+  let best: RuleCandidate | null = null;
 
   for (const rule of FIELD_RULES) {
     // Strongest signal: spec-defined autocomplete tokens.
     if (rule.autocomplete && acTokens.some((t) => rule.autocomplete!.includes(t))) {
-      const score = labelMatchScore("autocomplete", false);
-      if (!best || score > best.score) {
-        best = { rule, matchedOn: "autocomplete", exact: false, score };
-      }
+      best = stronger(best, candidateFor(rule, "autocomplete", false));
       continue; // no text signal can beat autocomplete for this rule
     }
 
@@ -100,10 +140,7 @@ function findRule(field: DiscoveredField): {
       for (const pattern of rule.patterns) {
         if (!pattern.test(text)) continue;
         const exact = on === "label" && isExactKeyword(text, pattern);
-        const score = labelMatchScore(on, exact);
-        if (!best || score > best.score) {
-          best = { rule, matchedOn: on, exact, score };
-        }
+        best = stronger(best, candidateFor(rule, on, exact));
       }
     }
   }
@@ -118,11 +155,73 @@ function isExactKeyword(text: string, pattern: RegExp): boolean {
   return !!m && m[0].length >= trimmed.length - 2;
 }
 
+/** Everything a human would read as "the question" for this control. */
+function questionText(field: DiscoveredField): string {
+  return [field.label, field.ariaLabel, field.placeholder, field.nearbyText ?? ""]
+    .filter((t) => t.trim().length > 0)
+    .join(" ");
+}
+
+/**
+ * The first custom answer whose `match` text applies to this field, or null.
+ * First-match-wins, so the user's own list order is their priority order.
+ */
+function findCustomAnswer(field: DiscoveredField, answers: CustomAnswer[]): CustomAnswer | null {
+  const question = questionText(field);
+  if (!question.trim()) return null;
+  for (const a of answers) {
+    if (!a.match.trim() || !a.answer.trim()) continue;
+    if (matchesQuestion(a.match, question)) return a;
+  }
+  return null;
+}
+
+/**
+ * Does the user's `match` text identify this `question`?
+ *
+ * Case-insensitive substring on whitespace-normalized text. The user pastes a
+ * fragment of the real question, so the two sides differ in wrapping, NBSPs
+ * and the trailing " *" required-marker — collapsing runs of whitespace makes
+ * those irrelevant. Deliberately NOT a regex: match text routinely contains
+ * `8+`, `(e.g., OpenAI)` and `?`, which would either throw or silently mean
+ * something else. Substring over word-boundary matching because the user
+ * controls both sides and a too-short fragment is fixed by typing a longer
+ * one — whereas escaping-plus-boundaries is code that can only reject matches
+ * the user meant.
+ */
+function matchesQuestion(match: string, question: string): boolean {
+  return normalizeText(question).includes(normalizeText(match));
+}
+
+/** Lowercase, collapse all whitespace (incl. NBSP) to single spaces, trim. */
+function normalizeText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 /**
  * Evaluate a single discovered field against the rules + profile.
  * Returns a FieldMatch describing what (if anything) we'd fill and how sure.
  */
 export function evaluateField(field: DiscoveredField, profile: UserProfile): FieldMatch {
+  // A custom answer the user wrote themselves outranks everything below,
+  // including the blocklist: the blocklist exists to stop *inferred* fills of
+  // sensitive fields, and this value was typed by the user for this question.
+  const custom = findCustomAnswer(field, profile.customAnswers ?? []);
+  if (custom) {
+    return {
+      fieldId: field.fieldId,
+      label: field.label,
+      type: field.type,
+      ruleId: "customAnswer",
+      profilePath: null,
+      value: custom.answer,
+      confidence: 0.95,
+      tier: "high",
+      flags: [],
+      reason: `Your custom answer for "${custom.match}".`,
+    };
+  }
+
   // Hard safety gate first — checked on every direct signal (not nearby text,
   // which can legitimately mention e.g. an EEO notice near unrelated fields).
   if (

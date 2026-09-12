@@ -11,7 +11,7 @@ import {
 } from "@/storage/settings";
 import { BackendClient, checkBackendHealth } from "@/api/client";
 import { KnowledgeBase } from "./KnowledgeBase";
-import { saveResumeFile } from "@/storage/resumeFile";
+import { saveCoverLetterFile, saveResumeFile } from "@/storage/resumeFile";
 import { exportProfileJson, importProfileJson } from "@/storage/profile";
 import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
 
@@ -95,6 +95,16 @@ export function Options() {
               update((d) => (d.meta.resumeFileName = name));
               // Persist right away: resume auto-attach must work even if the
               // user never clicks "Save profile" after uploading.
+              void persist();
+            }}
+          />
+
+          <CoverLetterUploadSection
+            coverLetterFileName={profile.meta.coverLetterFileName}
+            onFileNameChange={(name) => {
+              update((d) => (d.meta.coverLetterFileName = name));
+              // Persist right away, same as the resume: auto-attach must work
+              // even if the user never clicks "Save profile" after uploading.
               void persist();
             }}
           />
@@ -442,6 +452,47 @@ export function Options() {
             </button>
           </Section>
 
+          <Section title="Custom answers">
+            <p className="col-span-2 -mt-1 mb-1 text-xs text-gray-500">
+              Answers for questions no built-in rule covers. The extension fills a field when its
+              question contains your match text. First match in this list wins.
+            </p>
+            {profile.customAnswers.map((ans, i) => (
+              <div
+                key={i}
+                className="col-span-2 mb-2 grid grid-cols-[1fr_1fr_auto] items-end gap-2"
+              >
+                <TextField
+                  label="When the question contains"
+                  value={ans.match}
+                  placeholder="8+ years of professional software engineering"
+                  onChange={(v) => update((d) => (d.customAnswers[i].match = v))}
+                />
+                <TextField
+                  label="Answer with"
+                  value={ans.answer}
+                  placeholder="Yes"
+                  onChange={(v) => update((d) => (d.customAnswers[i].answer = v))}
+                />
+                <button
+                  type="button"
+                  onClick={() => update((d) => d.customAnswers.splice(i, 1))}
+                  className="pb-2 text-xs text-red-500 hover:underline"
+                  aria-label={`Remove custom answer ${i + 1}`}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => update((d) => d.customAnswers.push({ match: "", answer: "" }))}
+              className="col-span-2 mt-1 text-left text-sm text-blue-600 hover:underline"
+            >
+              + Add custom answer
+            </button>
+          </Section>
+
           <div className="flex items-center gap-3">
             <button
               onClick={onSave}
@@ -543,6 +594,63 @@ function ResumeUploadSection({
         <span className="ml-3 text-sm text-green-600">Parsed ✓ — review fields below</span>
       )}
       {status === "error" && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cover letter upload section
+// ---------------------------------------------------------------------------
+
+interface CoverLetterUploadSectionProps {
+  coverLetterFileName?: string;
+  onFileNameChange: (name: string) => void;
+}
+
+/**
+ * Stores a cover letter locally so fillExecutor can attach it to "Cover
+ * Letter" file inputs. No backend parse — unlike the resume, nothing here
+ * populates profile fields, so the file bytes are the whole feature.
+ */
+function CoverLetterUploadSection({
+  coverLetterFileName,
+  onFileNameChange,
+}: CoverLetterUploadSectionProps) {
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    setErrorMsg("");
+    if (await saveCoverLetterFile(file)) {
+      onFileNameChange(file.name);
+    } else {
+      setErrorMsg("Could not save the file — it may be larger than 5 MB.");
+    }
+  };
+
+  return (
+    <div className="mb-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">Cover letter</span>
+        {coverLetterFileName && (
+          <span className="text-xs text-gray-500">{coverLetterFileName}</span>
+        )}
+      </div>
+      <p className="mb-3 text-xs text-gray-500">
+        Optional. Stored on this device and attached automatically to &ldquo;Cover Letter&rdquo;
+        file uploads on application forms.
+      </p>
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+        <input
+          type="file"
+          accept=".pdf,.docx,.txt"
+          aria-label="Cover letter file"
+          className="hidden"
+          onChange={(e) => void onFile(e.target.files?.[0])}
+        />
+        {coverLetterFileName ? "Replace cover letter" : "Choose cover letter file"}
+      </label>
+      {errorMsg && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
     </div>
   );
 }
