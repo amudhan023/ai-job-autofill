@@ -99,6 +99,8 @@ export interface ProfileMeta {
   totalYearsExp: number;
   /** Original resume file name, set after a successful parse. */
   resumeFileName?: string;
+  /** Uploaded cover letter file name, set when its bytes are stored. */
+  coverLetterFileName?: string;
 }
 
 /**

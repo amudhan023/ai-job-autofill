@@ -112,6 +112,7 @@ and a missing/unreachable backend degrades to the deterministic result.
 | Remote config hot-extends detection fingerprints (additive only) | ✅ | `platforms.ts` (`applyRemoteHints`), wired in `content/index.ts` |
 | Resume bytes stored locally (5MB cap, base64 in storage.local) | ✅ | `extension/src/storage/resumeFile.ts`, saved on upload in `options/Options.tsx` |
 | Resume attached to Resume/CV file inputs (DataTransfer + input/change for dropzones) | ✅ | `adapters/domFill.ts` (`setFileValue`), `content/fillExecutor.ts` |
+| Cover letter bytes stored locally + attached to "Cover Letter" file inputs | ✅ | `storage/resumeFile.ts` (`saveCoverLetterFile`), `options/Options.tsx` (`CoverLetterUploadSection`), `content/fillExecutor.ts` (`attachDocument`) |
 | File inputs discoverable (incl. visually hidden behind styled dropzones) | ✅ | `adapters/discover.ts`, `types.ts` (`file` FieldType) |
 | Synthetic framework corpus (MUI/Angular/placeholder/autocomplete/shadow) | ✅ | `extension/src/content/corpus.test.ts` |
 

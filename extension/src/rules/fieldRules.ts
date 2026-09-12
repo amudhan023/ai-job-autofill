@@ -641,8 +641,9 @@ export const FIELD_RULES: FieldRule[] = [
   // Resume/CV upload: the stored resume file is attached by fillExecutor.
   // `profile` points at the stored file name so the no-value ⇒ no-fill
   // invariant holds when no resume has been uploaded to the extension.
-  // coverLetter (below, textarea-typed) also catches "Cover Letter" file
-  // inputs; the executor only attaches the resume to resumeUpload matches.
+  // A "Cover Letter" control can be either a file input or a textarea; the
+  // two rules below are distinguished by the engine's type tie-break, so each
+  // control routes to the rule that can actually drive it.
   {
     id: "resumeUpload",
     // "curriculum.?vitae" already matches French "curriculum vitae".
@@ -653,6 +654,19 @@ export const FIELD_RULES: FieldRule[] = [
       /lebenslauf/i,
     ],
     profile: "meta.resumeFileName",
+    type: "file",
+  },
+  // Cover letter upload: same attach path as the resume, different stored file.
+  {
+    id: "coverLetterUpload",
+    patterns: [
+      /cover.?letter/i,
+      // ES/DE/FR aliases, mirroring the textarea coverLetter rule (T10)
+      /carta.?de.?presentaci[oó]n/i,
+      /anschreiben/i,
+      /lettre.?de.?motivation/i,
+    ],
+    profile: "meta.coverLetterFileName",
     type: "file",
   },
 

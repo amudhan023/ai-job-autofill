@@ -11,7 +11,7 @@ import {
 } from "@/storage/settings";
 import { BackendClient, checkBackendHealth } from "@/api/client";
 import { KnowledgeBase } from "./KnowledgeBase";
-import { saveResumeFile } from "@/storage/resumeFile";
+import { saveCoverLetterFile, saveResumeFile } from "@/storage/resumeFile";
 import { exportProfileJson, importProfileJson } from "@/storage/profile";
 import { PHONE_COUNTRY_OPTIONS } from "@/rules/transforms";
 
@@ -95,6 +95,16 @@ export function Options() {
               update((d) => (d.meta.resumeFileName = name));
               // Persist right away: resume auto-attach must work even if the
               // user never clicks "Save profile" after uploading.
+              void persist();
+            }}
+          />
+
+          <CoverLetterUploadSection
+            coverLetterFileName={profile.meta.coverLetterFileName}
+            onFileNameChange={(name) => {
+              update((d) => (d.meta.coverLetterFileName = name));
+              // Persist right away, same as the resume: auto-attach must work
+              // even if the user never clicks "Save profile" after uploading.
               void persist();
             }}
           />
@@ -543,6 +553,63 @@ function ResumeUploadSection({
         <span className="ml-3 text-sm text-green-600">Parsed ✓ — review fields below</span>
       )}
       {status === "error" && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Cover letter upload section
+// ---------------------------------------------------------------------------
+
+interface CoverLetterUploadSectionProps {
+  coverLetterFileName?: string;
+  onFileNameChange: (name: string) => void;
+}
+
+/**
+ * Stores a cover letter locally so fillExecutor can attach it to "Cover
+ * Letter" file inputs. No backend parse — unlike the resume, nothing here
+ * populates profile fields, so the file bytes are the whole feature.
+ */
+function CoverLetterUploadSection({
+  coverLetterFileName,
+  onFileNameChange,
+}: CoverLetterUploadSectionProps) {
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const onFile = async (file: File | undefined) => {
+    if (!file) return;
+    setErrorMsg("");
+    if (await saveCoverLetterFile(file)) {
+      onFileNameChange(file.name);
+    } else {
+      setErrorMsg("Could not save the file — it may be larger than 5 MB.");
+    }
+  };
+
+  return (
+    <div className="mb-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">Cover letter</span>
+        {coverLetterFileName && (
+          <span className="text-xs text-gray-500">{coverLetterFileName}</span>
+        )}
+      </div>
+      <p className="mb-3 text-xs text-gray-500">
+        Optional. Stored on this device and attached automatically to
+        &ldquo;Cover Letter&rdquo; file uploads on application forms.
+      </p>
+      <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+        <input
+          type="file"
+          accept=".pdf,.docx,.txt"
+          aria-label="Cover letter file"
+          className="hidden"
+          onChange={(e) => void onFile(e.target.files?.[0])}
+        />
+        {coverLetterFileName ? "Replace cover letter" : "Choose cover letter file"}
+      </label>
+      {errorMsg && <p className="mt-2 text-sm text-red-600">{errorMsg}</p>}
     </div>
   );
 }
