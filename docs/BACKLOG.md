@@ -46,11 +46,15 @@ re-add finished phase/milestone work here.
 
 ## Blocked — needs credentials / human decisions (do not attempt)
 
+Current phase: personal use/testing only (single local user, unpublished
+extension). B2–B4 need a multi-user or public-distribution decision that
+hasn't been made yet — do not attempt until the user explicitly revisits them.
+
 | ID | Task | Blocker |
 |----|------|---------|
-| B2 | Auth0 integration | Auth0 tenant + credentials |
+| B2 | Auth0 integration | Auth0 tenant + credentials; also no multi-user need yet (personal-use phase) |
 | B3 | Real job-board providers (LinkedIn/Indeed) behind `JobProvider` | Partner API credentials |
-| B4 | Chrome Web Store publication | Developer account, listing assets sign-off |
+| B4 | Chrome Web Store publication | Developer account, listing assets sign-off; not needed while personal-use only |
 | B5 | Postgres/pgvector managed infra | Hosting decision + credentials (T4's SQLite default is not blocked) |
 
 ## Prioritization rules
