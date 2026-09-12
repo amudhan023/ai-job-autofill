@@ -123,4 +123,19 @@ describe("discoverWithin", () => {
     expect(labels.some((l) => l.includes("Authorized"))).toBe(true);
     expect(labels.some((l) => l.includes("sponsorship"))).toBe(true);
   });
+
+  it("skips react-select's aria-hidden requiredInput proxy", () => {
+    document.body.innerHTML = `
+      <form>
+        <label for="q1">Do you have experience with AWS?</label>
+        <div>
+          <input id="q1" role="combobox" type="text" />
+          <input class="requiredInput" required tabindex="-1" aria-hidden="true"
+            style="opacity:0;position:absolute" value="" />
+        </div>
+      </form>`;
+    const handles = discoverWithin(document.querySelector("form")!);
+    expect(handles).toHaveLength(1);
+    expect(handles[0].discovered.idAttr).toBe("q1");
+  });
 });

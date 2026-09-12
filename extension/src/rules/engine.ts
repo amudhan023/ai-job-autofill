@@ -1,4 +1,4 @@
-import type { UserProfile } from "@/shared/profile";
+import type { CustomAnswer, UserProfile } from "@/shared/profile";
 import type { FieldMatch, FieldRule, FieldType, RuleFlag } from "@/shared/types";
 import { FIELD_RULES, isBlocked } from "./fieldRules";
 import { computeConfidence, labelMatchScore, toTier, type MatchSource } from "./confidence";
@@ -155,11 +155,73 @@ function isExactKeyword(text: string, pattern: RegExp): boolean {
   return !!m && m[0].length >= trimmed.length - 2;
 }
 
+/** Everything a human would read as "the question" for this control. */
+function questionText(field: DiscoveredField): string {
+  return [field.label, field.ariaLabel, field.placeholder, field.nearbyText ?? ""]
+    .filter((t) => t.trim().length > 0)
+    .join(" ");
+}
+
+/**
+ * The first custom answer whose `match` text applies to this field, or null.
+ * First-match-wins, so the user's own list order is their priority order.
+ */
+function findCustomAnswer(field: DiscoveredField, answers: CustomAnswer[]): CustomAnswer | null {
+  const question = questionText(field);
+  if (!question.trim()) return null;
+  for (const a of answers) {
+    if (!a.match.trim() || !a.answer.trim()) continue;
+    if (matchesQuestion(a.match, question)) return a;
+  }
+  return null;
+}
+
+/**
+ * Does the user's `match` text identify this `question`?
+ *
+ * Case-insensitive substring on whitespace-normalized text. The user pastes a
+ * fragment of the real question, so the two sides differ in wrapping, NBSPs
+ * and the trailing " *" required-marker — collapsing runs of whitespace makes
+ * those irrelevant. Deliberately NOT a regex: match text routinely contains
+ * `8+`, `(e.g., OpenAI)` and `?`, which would either throw or silently mean
+ * something else. Substring over word-boundary matching because the user
+ * controls both sides and a too-short fragment is fixed by typing a longer
+ * one — whereas escaping-plus-boundaries is code that can only reject matches
+ * the user meant.
+ */
+function matchesQuestion(match: string, question: string): boolean {
+  return normalizeText(question).includes(normalizeText(match));
+}
+
+/** Lowercase, collapse all whitespace (incl. NBSP) to single spaces, trim. */
+function normalizeText(text: string): string {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 /**
  * Evaluate a single discovered field against the rules + profile.
  * Returns a FieldMatch describing what (if anything) we'd fill and how sure.
  */
 export function evaluateField(field: DiscoveredField, profile: UserProfile): FieldMatch {
+  // A custom answer the user wrote themselves outranks everything below,
+  // including the blocklist: the blocklist exists to stop *inferred* fills of
+  // sensitive fields, and this value was typed by the user for this question.
+  const custom = findCustomAnswer(field, profile.customAnswers ?? []);
+  if (custom) {
+    return {
+      fieldId: field.fieldId,
+      label: field.label,
+      type: field.type,
+      ruleId: "customAnswer",
+      profilePath: null,
+      value: custom.answer,
+      confidence: 0.95,
+      tier: "high",
+      flags: [],
+      reason: `Your custom answer for "${custom.match}".`,
+    };
+  }
+
   // Hard safety gate first — checked on every direct signal (not nearby text,
   // which can legitimately mention e.g. an EEO notice near unrelated fields).
   if (

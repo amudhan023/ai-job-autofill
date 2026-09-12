@@ -211,6 +211,39 @@ the live AI provider code already has (B1).
 (container port stays 8000) — set `BACKEND_PORT` in `deploy/.env` if 8000 is
 already taken on the deployment host.
 
+### Custom answers for unmatched screening questions (2026-09-12)
+
+Job-specific screening dropdowns ("Do you have 8+ years of professional
+software engineering experience?", "Have you implemented LLM-based workflows
+beyond simple prompt calls?") match no built-in rule, so nothing was written
+even though the combobox writer handles the widget fine. A rule per question
+doesn't scale — the questions change with every posting.
+
+`UserProfile.customAnswers` is a user-edited list of `{ match, answer }` pairs
+(Options → "Custom answers"). `evaluateField` consults it **before** the
+blocklist and returns `ruleId: "customAnswer"` at 0.95 confidence with no
+flags. Matching is case-insensitive substring on whitespace-normalized text
+(`matchesQuestion` in `rules/engine.ts`) — not regex, because match text
+routinely contains `8+`, `(e.g., OpenAI)` and `?`. First entry that matches
+wins, so list order is priority order.
+
+Ordering above the blocklist is deliberate: the blocklist stops the engine
+from *inferring* values for sensitive fields (veteran status, disability), not
+from using an answer the user typed for that exact question. EEO dropdowns
+stay untouched unless the user opts in by writing one.
+
+No write-path change was needed — `setComboboxValue`'s exact → startsWith →
+includes option matching already turns "Yes" into "Yes, I am a veteran".
+
+Second defect fixed in the same pass: `discover.isFillable()` now skips
+`aria-hidden="true"` controls. react-select renders a hidden `requiredInput`
+proxy (`tabindex=-1`, `opacity:0`) beside every combobox; `opacity` isn't
+`display:none`, so it slipped through and surfaced as "(unlabeled)" rows in
+the popup, one per dropdown, each a stray-write risk.
+
+Tests: `rules/customAnswers.test.ts` (9), plus an `aria-hidden` case in
+`adapters/discover.test.ts`.
+
 ## Testing — ✅ established (carried into all future phases)
 
 | Layer | Tool | Location | Count |

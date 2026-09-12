@@ -182,6 +182,11 @@ function isFillable(el: HTMLElement): boolean {
   // Contenteditable variants: skip explicitly disabled editors.
   if (el.getAttribute("contenteditable") === "false") return false;
   if (el.getAttribute("aria-readonly") === "true") return false;
+  // react-select renders a hidden "requiredInput" proxy next to each combobox
+  // (aria-hidden, tabindex=-1, opacity:0) purely to drive native validation.
+  // It isn't display:none, so the style check below can't catch it, and it has
+  // no label — it would surface as an "(unlabeled)" field and risk a stray write.
+  if (el.getAttribute("aria-hidden") === "true") return false;
   // Use the element's own window — computed styles are per-document (iframes).
   const win = el.ownerDocument?.defaultView ?? window;
   const style = win.getComputedStyle(el);

@@ -452,6 +452,47 @@ export function Options() {
             </button>
           </Section>
 
+          <Section title="Custom answers">
+            <p className="col-span-2 -mt-1 mb-1 text-xs text-gray-500">
+              Answers for questions no built-in rule covers. The extension fills a field when its
+              question contains your match text. First match in this list wins.
+            </p>
+            {profile.customAnswers.map((ans, i) => (
+              <div
+                key={i}
+                className="col-span-2 mb-2 grid grid-cols-[1fr_1fr_auto] items-end gap-2"
+              >
+                <TextField
+                  label="When the question contains"
+                  value={ans.match}
+                  placeholder="8+ years of professional software engineering"
+                  onChange={(v) => update((d) => (d.customAnswers[i].match = v))}
+                />
+                <TextField
+                  label="Answer with"
+                  value={ans.answer}
+                  placeholder="Yes"
+                  onChange={(v) => update((d) => (d.customAnswers[i].answer = v))}
+                />
+                <button
+                  type="button"
+                  onClick={() => update((d) => d.customAnswers.splice(i, 1))}
+                  className="pb-2 text-xs text-red-500 hover:underline"
+                  aria-label={`Remove custom answer ${i + 1}`}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => update((d) => d.customAnswers.push({ match: "", answer: "" }))}
+              className="col-span-2 mt-1 text-left text-sm text-blue-600 hover:underline"
+            >
+              + Add custom answer
+            </button>
+          </Section>
+
           <div className="flex items-center gap-3">
             <button
               onClick={onSave}
@@ -596,8 +637,8 @@ function CoverLetterUploadSection({
         )}
       </div>
       <p className="mb-3 text-xs text-gray-500">
-        Optional. Stored on this device and attached automatically to
-        &ldquo;Cover Letter&rdquo; file uploads on application forms.
+        Optional. Stored on this device and attached automatically to &ldquo;Cover Letter&rdquo;
+        file uploads on application forms.
       </p>
       <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
         <input
