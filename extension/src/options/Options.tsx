@@ -596,8 +596,8 @@ function CoverLetterUploadSection({
         )}
       </div>
       <p className="mb-3 text-xs text-gray-500">
-        Optional. Stored on this device and attached automatically to
-        &ldquo;Cover Letter&rdquo; file uploads on application forms.
+        Optional. Stored on this device and attached automatically to &ldquo;Cover Letter&rdquo;
+        file uploads on application forms.
       </p>
       <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
         <input
