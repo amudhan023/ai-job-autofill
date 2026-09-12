@@ -80,3 +80,58 @@ export function visaToCitizenship(value: unknown): string {
   if (typeof value !== "string" || value === "") return "";
   return value === "USC" ? "Yes" : "No";
 }
+
+/**
+ * "Do you currently live in the United States?" from personal.location.country.
+ * Unset country → "" (never guess residency). Matches the common spellings an
+ * ATS profile might hold; anything else is a truthful "No".
+ */
+const US_COUNTRY = /^(us|usa|u\.s\.a?\.?|united\s?states( of america)?)$/i;
+
+export function countryToUsResidency(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  return US_COUNTRY.test(value.trim()) ? "Yes" : "No";
+}
+
+/**
+ * Screening gates that state their own bar in the label ("Do you have 5+ years
+ * of ... experience?"). Reads the threshold out of the question and compares it
+ * to meta.totalYearsExp. Returns "" when either side is missing — an unset
+ * profile (totalYearsExp defaults to 0) must not answer "No" to every gate.
+ */
+export function yearsMeetsThreshold(value: unknown, label: string): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return "";
+  const m = /(\d+)\s*\+?\s*(?:or more\s*)?years?/i.exec(label);
+  if (!m) return "";
+  return value >= Number(m[1]) ? "Yes" : "No";
+}
+
+/**
+ * Skill gates ("Do you have hands-on experience with Terraform, Pulumi, or
+ * CDK?"). Decides Yes/No by comparing the user's technical skills against the
+ * technologies named in the question itself.
+ *
+ * Confirm-flagged at the rule level: this is a heuristic about the user's own
+ * qualifications, so the popup surfaces the answer for review and the executor
+ * never writes it to the page.
+ */
+export function skillsMatchLabel(value: unknown, label: string): string {
+  if (!Array.isArray(value) || !label.trim()) return "";
+  const skills = value.filter((s): s is string => typeof s === "string" && s.trim().length >= 2);
+  if (skills.length === 0) return "";
+  // Word-boundary match so "Go" doesn't hit "good" and "R" doesn't hit
+  // everything. \b is useless next to a non-word character, though — "C++"
+  // and ".NET" end/start on punctuation — so anchor on a non-word char (or
+  // string edge) instead of \b on those sides.
+  const hit = skills.some((skill) => {
+    const s = skill.trim();
+    const esc = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const left = /^\w/.test(s) ? "\\b" : "(?:^|\\W)";
+    const right = /\w$/.test(s) ? "\\b" : "(?:$|\\W)";
+    return new RegExp(`${left}${esc}${right}`, "i").test(label);
+  });
+  // One overlap is enough for "Yes" — these gates read "such as X, Y, or Z".
+  // Zero overlap is *unknown*, not "No": the question may name a technology
+  // the user simply never listed, and a wrong "No" kills the application.
+  return hit ? "Yes" : "";
+}
