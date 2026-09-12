@@ -7,6 +7,9 @@ import {
   dialCodeToCountry,
   joinList,
   visaToCitizenship,
+  countryToUsResidency,
+  yearsMeetsThreshold,
+  skillsMatchLabel,
 } from "./transforms";
 
 /**
@@ -303,6 +306,19 @@ export const FIELD_RULES: FieldRule[] = [
     type: "text",
     autocomplete: ["organization-title"],
   },
+  // Screening gate stating its own bar ("Do you have 5+ years of ...?"). Must
+  // precede yearsExp: both match "Do you have at least 3 years of experience",
+  // and this one answers Yes/No where yearsExp would write the raw number.
+  {
+    id: "yearsExpThreshold",
+    patterns: [
+      /(do you have|have you got)[^?]{0,60}\b\d+\s*\+?\s*(or more\s*)?years?\b/i,
+      /\b(at least|minimum of|more than)\s*\d+\s*\+?\s*years?\b/i,
+    ],
+    profile: "meta.totalYearsExp",
+    type: "radio",
+    transform: yearsMeetsThreshold,
+  },
   {
     id: "yearsExp",
     patterns: [
@@ -423,6 +439,18 @@ export const FIELD_RULES: FieldRule[] = [
   },
 
   // --- Work Authorization ---
+  // Residency ("Do you currently live in the United States?") — distinct from
+  // authorization and from citizenship; answered from the profile's country.
+  {
+    id: "residesInUS",
+    patterns: [
+      /(currently\s+)?(live|living|reside|residing|located|based)[^?]{0,40}(united.?states|\bu\.?s\.?a?\b)/i,
+      /(united.?states|\bu\.?s\.?a?\b)[^?]{0,20}(resident|residency)/i,
+    ],
+    profile: "personal.location.country",
+    type: "radio",
+    transform: countryToUsResidency,
+  },
   {
     id: "usAuthorized",
     patterns: [
@@ -511,6 +539,13 @@ export const FIELD_RULES: FieldRule[] = [
     id: "pronouns",
     patterns: [/pronoun/i],
     profile: "demographics.pronouns",
+    type: "radio",
+    flags: ["confirm"],
+  },
+  {
+    id: "transgender",
+    patterns: [/transgender/i, /\btrans\b.*identify|identify.*\btrans\b/i],
+    profile: "demographics.transgender",
     type: "radio",
     flags: ["confirm"],
   },
@@ -635,6 +670,25 @@ export const FIELD_RULES: FieldRule[] = [
     profile: "preferences.consentToContact",
     type: "checkbox",
     transform: boolToYesNo,
+  },
+
+  // --- Skill / tooling screening gates ---
+  // "Do you have hands-on experience with Terraform, Pulumi, or CDK?" — the
+  // question names the technologies, so the answer comes from comparing them
+  // to skills.technical. Listed last: a heuristic, so it must lose every
+  // same-signal tie against a specific rule above. Confirm-flagged — the popup
+  // shows the answer, the executor never writes it.
+  {
+    id: "skillGate",
+    patterns: [
+      /(do you have|have you)[^?]{0,40}(hands.?on|professional|practical|direct|prior)[^?]{0,20}experience/i,
+      /have you (used|applied|worked with|built with|deployed)\b/i,
+      /experience (with|using|in)[^?]{0,80}\b(such as|including|e\.g\.|like)\b/i,
+    ],
+    profile: "skills.technical",
+    type: "radio",
+    transform: skillsMatchLabel,
+    flags: ["confirm"],
   },
 
   // --- File uploads (M6) ---

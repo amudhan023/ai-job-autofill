@@ -44,8 +44,12 @@ export interface FieldRule {
   profile: string | null;
   type: FieldType;
   flags?: RuleFlag[];
-  /** Optional value transform (e.g. boolean → "Yes"/"No"). */
-  transform?: (value: unknown) => string;
+  /**
+   * Optional value transform (e.g. boolean → "Yes"/"No"). `label` is the
+   * discovered field's label text, for screening questions that state their
+   * own bar ("Do you have 5+ years...?") and must be answered against it.
+   */
+  transform?: (value: unknown, label: string) => string;
   /**
    * HTML `autocomplete` tokens that authoritatively identify this field
    * (e.g. "given-name"). Spec-defined semantics — strongest match signal.
