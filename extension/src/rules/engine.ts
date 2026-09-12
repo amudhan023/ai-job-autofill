@@ -63,6 +63,38 @@ function autocompleteTokens(field: DiscoveredField): string[] {
     .filter((t) => t && t !== "on" && t !== "off" && !t.startsWith("section-"));
 }
 
+/** One rule's claim on a field, ranked by `beats()`. */
+interface RuleCandidate {
+  rule: FieldRule;
+  matchedOn: MatchSource;
+  exact: boolean;
+  /** Signal strength, 0-1 (see confidence.ts SOURCE_SCORES). */
+  score: number;
+  /** True when the rule's declared type can drive this control. */
+  typeMatch: boolean;
+}
+
+/**
+ * The stronger of two candidate rules for the same field (`best` is absent on
+ * the first match).
+ *
+ * Exact ties are common, not rare: two rules often match the same label on the
+ * same signal and so carry an identical score. The live ClickUp/Ashby question
+ * "...sponsor you for a work visa ... in the country where you will be
+ * working?" matches both /country/i and /sponsor/i on its label. Without a
+ * tie-break, declaration order in FIELD_RULES silently decides, and `country`
+ * (a text rule) wins a radio group it cannot fill.
+ */
+function stronger(best: RuleCandidate | null, candidate: RuleCandidate): RuleCandidate {
+  if (!best) return candidate;
+  // Signal strength stays the primary key: a type-compatible rule must never
+  // promote itself over a genuinely stronger match.
+  if (candidate.score !== best.score) return candidate.score > best.score ? candidate : best;
+  // Equal score: the rule whose declared type can actually drive the control
+  // wins. Still equal, the incumbent keeps it — preserving FIELD_RULES order.
+  return candidate.typeMatch && !best.typeMatch ? candidate : best;
+}
+
 /**
  * Score every rule against every signal and return the strongest match.
  * Rule-array order only breaks ties (more specific rules are listed first);
@@ -83,16 +115,24 @@ function findRule(field: DiscoveredField): {
   const signals = signalsFor(field);
   const acTokens = autocompleteTokens(field);
 
-  let best: { rule: FieldRule; matchedOn: MatchSource; exact: boolean; score: number } | null =
-    null;
+  const candidateFor = (
+    rule: FieldRule,
+    matchedOn: MatchSource,
+    exact: boolean,
+  ): RuleCandidate => ({
+    rule,
+    matchedOn,
+    exact,
+    score: labelMatchScore(matchedOn, exact),
+    typeMatch: field.type === rule.type || isCompatibleType(field.type, rule.type),
+  });
+
+  let best: RuleCandidate | null = null;
 
   for (const rule of FIELD_RULES) {
     // Strongest signal: spec-defined autocomplete tokens.
     if (rule.autocomplete && acTokens.some((t) => rule.autocomplete!.includes(t))) {
-      const score = labelMatchScore("autocomplete", false);
-      if (!best || score > best.score) {
-        best = { rule, matchedOn: "autocomplete", exact: false, score };
-      }
+      best = stronger(best, candidateFor(rule, "autocomplete", false));
       continue; // no text signal can beat autocomplete for this rule
     }
 
@@ -100,10 +140,7 @@ function findRule(field: DiscoveredField): {
       for (const pattern of rule.patterns) {
         if (!pattern.test(text)) continue;
         const exact = on === "label" && isExactKeyword(text, pattern);
-        const score = labelMatchScore(on, exact);
-        if (!best || score > best.score) {
-          best = { rule, matchedOn: on, exact, score };
-        }
+        best = stronger(best, candidateFor(rule, on, exact));
       }
     }
   }
