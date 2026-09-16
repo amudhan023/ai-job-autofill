@@ -82,10 +82,7 @@ describe("Greenhouse/Omada screening questions", () => {
 
   it("still writes the raw number for a plain years-of-experience field", () => {
     const p = profile((x) => (x.meta.totalYearsExp = 8));
-    const m = evaluateField(
-      { ...field("Years of experience"), type: "number" },
-      p,
-    );
+    const m = evaluateField({ ...field("Years of experience"), type: "number" }, p);
     expect(m.ruleId).toBe("yearsExp");
     expect(m.value).toBe("8");
   });
