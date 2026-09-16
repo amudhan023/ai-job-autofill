@@ -297,7 +297,7 @@ export function evaluateField(field: DiscoveredField, profile: UserProfile): Fie
     profileValueExists: valueExists,
   });
 
-  const value = valueExists ? formatValue(raw, rule) : null;
+  const value = valueExists ? formatValue(raw, rule, field.label) : null;
 
   return {
     fieldId: field.fieldId,
@@ -313,9 +313,9 @@ export function evaluateField(field: DiscoveredField, profile: UserProfile): Fie
   };
 }
 
-function formatValue(raw: unknown, rule: FieldRule): string | null {
+function formatValue(raw: unknown, rule: FieldRule, label: string): string | null {
   const result = rule.transform
-    ? rule.transform(raw)
+    ? rule.transform(raw, label)
     : raw === null || raw === undefined
       ? ""
       : String(raw);

@@ -395,6 +395,17 @@ export function Options() {
               ]}
             />
             <SelectField
+              label="Do you identify as transgender?"
+              value={profile.demographics.transgender}
+              onChange={(v) => update((d) => (d.demographics.transgender = v))}
+              options={[
+                { value: "", label: "Not set" },
+                { value: "Yes", label: "Yes" },
+                { value: "No", label: "No" },
+                { value: "Prefer not to answer", label: "Prefer not to answer" },
+              ]}
+            />
+            <SelectField
               label="Do you identify as a member of the LGBTQIA+ community?"
               value={profile.demographics.lgbtqia}
               onChange={(v) => update((d) => (d.demographics.lgbtqia = v))}
